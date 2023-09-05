@@ -167,9 +167,6 @@ const getHarvestMessage = async (prev = null) => {
 
 const split = async (text, prev = null, additional = null) => {
   const encoded = encode(text);
-
-  console.log(encoded);
-
   const results = [];
 
     let prompt = text + "\n\n" + additional;

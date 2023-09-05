@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "active-win": "^8.0.2",
+    "chatgpt": "^5.2.5",
+    "clipboardy": "^3.0.0",
+    "dotenv": "^16.0.3",
+    "gpt-3-encoder": "^1.1.4",
+    "mac-windows": "^1.0.0",
+    "openai": "^3.1.0"
+  }
+}

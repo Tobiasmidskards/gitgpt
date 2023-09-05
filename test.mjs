@@ -167,6 +167,11 @@ const getHarvestMessage = async (prev = null) => {
 
 const split = async (text, prev = null, additional = null) => {
   const encoded = encode(text);
+
+  if (encoded.length > 4096) {
+    throw new Error("Text too long");
+  }
+
   const results = [];
 
     let prompt = text + "\n\n" + additional;

@@ -31,7 +31,7 @@ async function stream(model = 'gpt-4') {
         process.stdout.write(text);
         content += text;
     }
-    
+
     addMessage(content, 'assistant');
 }
 
@@ -60,7 +60,11 @@ async function getDiff() {
 }
 
 async function getCommit() {
-    addMessage("You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user explicitly asks for it, you can help with other things.");
+    console.log(" ");
+    console.log("-------------------- COMMIT ---------------------");
+    console.log(" ");
+
+    addMessage("You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things.");
 
     let prompt = `The diff comes from this command: git --no-pager diff --cached -U5 --line-prefix '$ '
 
@@ -100,12 +104,41 @@ async function getCommit() {
     copyToClipboard(messages[messages.length - 1].content);
 }
 
+async function getEstimate() {
+    console.log(" ");
+    console.log(" ");
+    console.log("-------------------- Harvest ---------------------");
+    console.log(" ");
+
+    const prompt = `NOW_CHAT
+  
+                  Based on the information i have provided, how could a note look like in Harvest?
+                  The note should not be very technical, as it is for the client.
+                  
+                  An example of a note in Harvest is: "Resolved issue with 'show all' for Feature B module."
+                  
+                  also how long time would you estimate that the changes in the diff would take to implement? I only accept ranges like 0.5-1 hour, 1-2 hours or 2-3 days. I just need one range answer. Please
+
+                  list those answers in points on new lines.
+
+                  Example:
+                  1. Added functionality to provide estimation. Made the process more user-friendly with non-technical language.
+                  2. Estimated implementation time: 1-2 hours.
+                  "  
+  `;
+
+    addMessage(prompt);
+    await stream();
+}
+
 const copyToClipboard = (text) => {
     clipboardy.writeSync(text);
 }
 
 async function main() {
     await getCommit();
+    await getEstimate();
+    console.log(" ");
     exit(0);
 }
 

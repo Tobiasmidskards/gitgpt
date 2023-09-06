@@ -66,34 +66,32 @@ async function getCommit() {
 
     addMessage("You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things.");
 
-    let prompt = `The diff comes from this command: git --no-pager diff --cached -U5 --line-prefix '$ '
-
-    Every line starts with $ and a space.
-    Keep in mind that if a new line is added without any other changes, then the line is still added to the diff, but you should not add it to the commit message.
-
+    let prompt = `
+    The diff comes from this command: git --no-pager diff --cached -U5 --line-prefix '$ '
+    Each line starts with $ .
     ----
-
-    IMPORTANT:
-    The message should follow these rules!: 
-    1. written in the imperative mood.
-    2. short and concise.
-    3. max 50 characters long.
-    4. in english.
-    5. only one line.
-    6. example response: git commit -m "commit message"
-
+    Commit Message Rules:
+    1. Use the imperative mood ("Add" instead of "Adds" or "Added").
+    2. Start with a capital letter.
+    3. Do not end with a period.
+    4. Summarize the change, not the reason for it.
+    5. Keep it concise, max 50 characters.
+    6. Make it clear and descriptive.
+    7. English only.
+    8. Single-line format.
+    
+    Example: git commit -m "Add login feature"
     ----
-
-    If there is not enough information about the commit, then return with "not enough information".
+    If commit details are insufficient, reply with "not enough information."
     
     + means that the line was added
     - means that the line was removed
     
-    Your response should be like this: git commit -m "commit message"
-    Remember to answer with a command like: git commit -m "commit message" with lowercase letters for the command.
-    I do not accept any other answers. 
+    In the diff, + indicates an added line, - indicates a removed line.
 
-    The diff is:
+    Respond only in this format: git commit -m "Commit message". Lowercase commands only.
+
+    Diff is:
     `;
 
     prompt = prompt.replaceAll("  ", "") + await getDiff();

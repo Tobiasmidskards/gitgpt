@@ -39,8 +39,11 @@ async function resolveCommand(command) {
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (error || stderr) {
-                console.log('ERRORS', error, stderr);
-                reject(error || stderr);
+                if (stderr && stderr.includes('To github.com')) {
+                    resolve(stdout);
+                } else {
+                    reject(error || stderr);
+                }
             }
             resolve(stdout);
         });

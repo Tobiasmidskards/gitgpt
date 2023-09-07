@@ -146,11 +146,13 @@ async function executeStatusFlow() {
 }
 
 function consoleHeader(title) {
-    writeStdout("-------------------- " + title + " ---------------------\n");
+    writeStdout("-------------------- " + title + " ---------------------");
+    emptyLine();
 }
 
 function consoleInfo(title) {
-    writeStdout(">>>> " + title + "\n");
+    writeStdout(">>>> " + title);
+    emptyLine();
 }
 
 async function prepareCommitPrompt() {

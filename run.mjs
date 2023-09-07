@@ -18,7 +18,11 @@ const configureStdout = (content, text) => {
     return content += text;
 };
 const writeStdout = (content) => process.stdout.write(content);
-const emptyLine = () => writeStdout("\n\n");
+const emptyLine = (times = 1) => {
+    for (let i = 0; i < times; i++) {
+        writeStdout('\n');
+    }
+};
 
 const showHelp = () => {
     process.stdout.write(`

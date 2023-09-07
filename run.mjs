@@ -82,23 +82,15 @@ async function main() {
 
         try {
             await resolveCommand(commitCommand);
-        } catch (error) {
-            console.error(error);
+            consoleInfo("Pushing to origin");
+            await resolveCommand("git push");
+            consoleInfo("Done")
+        }
+        catch (error) {
+            console.log('Er1ror: ' + error);
         }
 
-
-        await new Promise((resolve, reject) => {
-            consoleInfo("Pushing to origin");
-
-            exec("git push", (error, stdout, stderr) => {
-                if (error || stderr) {
-                    console.log(error || stderr);
-                }
-                resolve(stdout);
-            });
-        });
-
-        consoleInfo("Done")
+        exit(0);
     }
 
     console.log("\n");

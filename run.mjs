@@ -82,7 +82,6 @@ async function main() {
         });
 
         await new Promise((resolve, reject) => {
-            console.log("\n")
             consoleInfo("Pushing to origin");
 
             exec("git push", (error, stdout, stderr) => {

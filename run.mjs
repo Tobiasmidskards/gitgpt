@@ -14,9 +14,11 @@ const messages = [
 
 const addMessage = (message, role = 'user') => messages.push({ role, content: message });
 const configureStdout = (content, text) => {
-    process.stdout.write(text);
+    writeStdout(text);
     return content += text;
 };
+const writeStdout = (content) => process.stdout.write(content);
+const emptyLine = () => writeStdout("\n\n");
 
 const showHelp = () => {
     process.stdout.write(`
@@ -39,7 +41,7 @@ async function resolveCommand(command) {
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (error || stderr) {
-                if (stderr && stderr.includes('To github.com')) {
+                if (stderr && typeof stderr === 'string' && stderr.includes('To github.com')) {
                     resolve(stderr);
                 } else {
                     reject(error || stderr);
@@ -74,20 +76,20 @@ async function main() {
     }
 
 
-    console.log("\n");
+    emptyLine()
     await executeStatusFlow();
     await executeCommitFlow();
 
     if(args['-C']) {
         const commitCommand = messages[messages.length - 1].content;
 
-        console.log("\n")
+        emptyLine()
         consoleInfo("Applying commit: " + commitCommand);
 
         try {
-            console.log(await resolveCommand(commitCommand));
+            writeStdout(await resolveCommand(commitCommand));
             consoleInfo("Pushing to origin");
-            console.log(await resolveCommand("git push"));
+            writeStdout(await resolveCommand("git push"));
             consoleInfo("Done")
         }
         catch (error) {
@@ -97,10 +99,9 @@ async function main() {
         }
     }
 
-    console.log("\n");
+    emptyLine()
     await executeEstimateFlow();
-    console.log("\n");
-
+    emptyLine()
 
     exit(0);
 }
@@ -141,15 +142,15 @@ async function executeEstimateFlow() {
 async function executeStatusFlow() {
     consoleHeader("STATUS");
     const status = await getStatus();
-    console.log(status);
+    writeStdout(status);
 }
 
 function consoleHeader(title) {
-    console.log("-------------------- " + title + " ---------------------\n");
+    writeStdout("-------------------- " + title + " ---------------------\n");
 }
 
 function consoleInfo(title) {
-    console.log(">>>> " + title + "\n");
+    writeStdout(">>>> " + title + "\n");
 }
 
 async function prepareCommitPrompt() {

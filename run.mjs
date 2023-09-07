@@ -70,7 +70,7 @@ async function main() {
         await new Promise((resolve, reject) => {
             exec(messages[messages.length - 1].content, (error, stdout, stderr) => {
                 if (error || stderr) {
-                    reject(error || stderr);
+                    console.log(error || stderr);
                 }
                 resolve(stdout);
             });
@@ -79,7 +79,7 @@ async function main() {
         await new Promise((resolve, reject) => {
             exec("git push", (error, stdout, stderr) => {
                 if (error || stderr) {
-                    reject(error || stderr);
+                    console.log(error || stderr);
                 }
                 resolve(stdout);
             });

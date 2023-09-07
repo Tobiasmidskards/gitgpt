@@ -83,14 +83,14 @@ async function main() {
         try {
             await resolveCommand(commitCommand);
             consoleInfo("Pushing to origin");
-            await resolveCommand("git push origin HEAD");
+            await resolveCommand("git push");
             consoleInfo("Done")
         }
         catch (error) {
-            console.log('Er1ror: ' + error);
+            if (!error.includes('To github.com')) {
+                console.error(error);
+            }
         }
-
-        exit(0);
     }
 
     console.log("\n");

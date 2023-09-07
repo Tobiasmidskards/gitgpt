@@ -75,8 +75,6 @@ async function main() {
         exit(0);
     }
 
-
-    emptyLine()
     await executeStatusFlow();
     await executeCommitFlow();
 

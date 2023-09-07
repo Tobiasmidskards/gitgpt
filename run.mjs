@@ -85,9 +85,9 @@ async function main() {
         consoleInfo("Applying commit: " + commitCommand);
 
         try {
-            await resolveCommand(commitCommand);
+            console.log(await resolveCommand(commitCommand));
             consoleInfo("Pushing to origin");
-            await resolveCommand("git push");
+            console.log(await resolveCommand("git push"));
             consoleInfo("Done")
         }
         catch (error) {

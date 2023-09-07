@@ -75,18 +75,17 @@ async function main() {
     await executeCommitFlow();
 
     if(args['-C']) {
-        await new Promise(async (resolve, reject) => {
-            const commitCommand = messages[messages.length - 1].content;
+        const commitCommand = messages[messages.length - 1].content;
 
-            console.log("\n")
-            consoleInfo("Applying commit: " + commitCommand);
+        console.log("\n")
+        consoleInfo("Applying commit: " + commitCommand);
 
-            try {
-                await resolveCommand(commitCommand);
-            } catch (error) {
-                console.error(error);
-            }
-        });
+        try {
+            await resolveCommand(commitCommand);
+        } catch (error) {
+            console.error(error);
+        }
+
 
         await new Promise((resolve, reject) => {
             consoleInfo("Pushing to origin");

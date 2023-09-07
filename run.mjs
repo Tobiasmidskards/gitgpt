@@ -83,7 +83,7 @@ async function main() {
         try {
             await resolveCommand(commitCommand);
             consoleInfo("Pushing to origin");
-            await resolveCommand("git push");
+            await resolveCommand("git push origin HEAD");
             consoleInfo("Done")
         }
         catch (error) {

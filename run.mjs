@@ -68,7 +68,10 @@ async function main() {
 
     if(args['-C']) {
         await new Promise((resolve, reject) => {
-            exec(messages[messages.length - 1].content, (error, stdout, stderr) => {
+            const commitCommand = messages[messages.length - 1].content;
+            consoleHeader("Applying commit: " + commitCommand);
+
+            exec(commitCommand, (error, stdout, stderr) => {
                 if (error || stderr) {
                     console.log(error || stderr);
                 }
@@ -77,6 +80,8 @@ async function main() {
         });
 
         await new Promise((resolve, reject) => {
+            consoleHeader("Pushing to origin");
+
             exec("git push", (error, stdout, stderr) => {
                 if (error || stderr) {
                     console.log(error || stderr);

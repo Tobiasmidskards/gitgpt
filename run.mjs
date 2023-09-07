@@ -150,7 +150,7 @@ async function executeStatusFlow() {
 function consoleHeader(title) {
     emptyLine();
     writeStdout("-------------------- " + title + " ---------------------");
-    emptyLine();
+    emptyLine(2);
 }
 
 function consoleInfo(title) {

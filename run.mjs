@@ -71,7 +71,7 @@ async function main() {
             const commitCommand = messages[messages.length - 1].content;
 
             console.log("\n")
-            consoleHeader("Applying commit: " + commitCommand);
+            consoleInfo("Applying commit: " + commitCommand);
 
             exec(commitCommand, (error, stdout, stderr) => {
                 if (error || stderr) {
@@ -83,7 +83,7 @@ async function main() {
 
         await new Promise((resolve, reject) => {
             console.log("\n")
-            consoleHeader("Pushing to origin");
+            consoleInfo("Pushing to origin");
 
             exec("git push", (error, stdout, stderr) => {
                 if (error || stderr) {
@@ -143,6 +143,10 @@ async function executeStatusFlow() {
 
 function consoleHeader(title) {
     console.log("-------------------- " + title + " ---------------------\n");
+}
+
+function consoleInfo(title) {
+    console.log(">>>> " + title + "\n");
 }
 
 async function prepareCommitPrompt() {

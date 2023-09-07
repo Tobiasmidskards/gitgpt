@@ -18,7 +18,7 @@ const configureStdout = (content, text) => {
     return content += text;
 };
 const writeStdout = (content) => process.stdout.write(content);
-const emptyLine = () => writeStdout("\n\n");
+const emptyLine = () => writeStdout("\n");
 
 const showHelp = () => {
     process.stdout.write(`
@@ -144,11 +144,13 @@ async function executeStatusFlow() {
 }
 
 function consoleHeader(title) {
+    emptyLine();
     writeStdout("-------------------- " + title + " ---------------------");
     emptyLine();
 }
 
 function consoleInfo(title) {
+    emptyLine();
     writeStdout(">>>> " + title);
     emptyLine();
 }

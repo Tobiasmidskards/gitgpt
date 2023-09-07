@@ -35,6 +35,17 @@ const showHelp = () => {
     exit(0);
 }
 
+async function resolveCommand(command) {
+    return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if (error || stderr) {
+                reject(error || stderr);
+            }
+            resolve(stdout);
+        });
+    });
+}
+
 const args = await getArgs();
 
 async function main() {
@@ -44,14 +55,7 @@ async function main() {
     }
 
     if (args['-A']) {
-        await new Promise((resolve, reject) => {
-            exec("git add -A", (error, stdout, stderr) => {
-                if (error || stderr) {
-                    reject(error || stderr);
-                }
-                resolve(stdout);
-            });
-        });
+        await resolveCommand("git add -A");
     }
     
     if (args['--commit']) {
@@ -71,18 +75,17 @@ async function main() {
     await executeCommitFlow();
 
     if(args['-C']) {
-        await new Promise((resolve, reject) => {
+        await new Promise(async (resolve, reject) => {
             const commitCommand = messages[messages.length - 1].content;
 
             console.log("\n")
             consoleInfo("Applying commit: " + commitCommand);
 
-            exec(commitCommand, (error, stdout, stderr) => {
-                if (error || stderr) {
-                    console.log(error || stderr);
-                }
-                resolve(stdout);
-            });
+            try {
+                await resolveCommand(commitCommand);
+            } catch (error) {
+                console.error(error);
+            }
         });
 
         await new Promise((resolve, reject) => {

@@ -286,7 +286,4 @@ function copyLastMessageToClipboard() {
     clipboardy.writeSync(messages[messages.length - 1].content);
 }
 
-// args
-
-main(
-);
+main();

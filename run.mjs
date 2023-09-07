@@ -18,14 +18,100 @@ const configureStdout = (content, text) => {
     return content += text;
 };
 
+const args = await getArgs();
+
 async function main() {
+
+    if (args['--help']) {
+        console.log(`
+            Usage: node run.mjs [--help] [--commit] [--estimate]
+
+            Defaults to all flows if no options are provided.
+            
+            Options:
+            --help      Show help
+            --commit    Run commit flow
+            --estimate  Run estimate flow
+            --hint      Provide a hint for the assistant
+            -A          Add all files to commit
+            -C          Commit and push directly to origin
+        `);
+        exit(0);
+    }
+
+    if (args['-A']) {
+        await new Promise((resolve, reject) => {
+            exec("git add -A", (error, stdout, stderr) => {
+                if (error || stderr) {
+                    reject(error || stderr);
+                }
+                resolve(stdout);
+            });
+        });
+    }
+    
+    if (args['--commit']) {
+        await executeCommitFlow();
+        exit(0);
+    }
+
+    if (args['--estimate']) {
+        await prepareCommitPrompt();
+        await executeEstimateFlow();
+        exit(0);
+    }
+
+
     console.log("\n");
     await executeStatusFlow();
     await executeCommitFlow();
+
+    if(args['-C']) {
+        await new Promise((resolve, reject) => {
+            exec(messages[messages.length - 1].content, (error, stdout, stderr) => {
+                if (error || stderr) {
+                    reject(error || stderr);
+                }
+                resolve(stdout);
+            });
+        });
+
+        await new Promise((resolve, reject) => {
+            exec("git push", (error, stdout, stderr) => {
+                if (error || stderr) {
+                    reject(error || stderr);
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
     console.log("\n");
     await executeEstimateFlow();
     console.log("\n");
+
+
     exit(0);
+}
+
+async function getArgs() {
+    const allowedArgs = ['--help', '--commit', '--estimate', '--hint', '-A', '-C'];
+    const rawArgs = process.argv.slice(2);
+
+    const args = process.argv.slice(2).reduce((acc, arg) => {
+        const [key, value] = arg.split('=');
+        const validArg = allowedArgs.includes(key);
+        if (validArg) {
+            acc[key] = value || true;
+        }
+        return acc;
+    }, {});
+
+    if (Object.keys(args).length === 0 && rawArgs.length > 0) {
+        args['--hint'] = rawArgs.join(' ');
+    }
+
+    return args;
 }
 
 async function executeCommitFlow() {
@@ -81,6 +167,14 @@ function buildCommitPrompt(diff) {
       Respond only in this format: git commit -m "Commit message". Lowercase commands only.
     `;
 
+    let hintInfo = '';
+
+    if (args['--hint']) {
+        hintInfo = `
+      The user provided this hint for the commit message. Please incorporate it into your message: "${args['--hint']}"
+        `;
+    }
+
     let prompt = `
       The diff comes from this command: git --no-pager diff --cached -U5 --line-prefix '$ '
       Each line starts with $ .
@@ -88,6 +182,8 @@ function buildCommitPrompt(diff) {
       ${rules}
       ----
       ${additionalInfo}
+      ----
+      ${hintInfo}
       ----
       Diff is:
     `;
@@ -99,18 +195,29 @@ function buildCommitPrompt(diff) {
 }
 
 function buildEstimatePrompt() {
+    addMessage("Good - NOW_CHAT - from now on you can chat like a normal person.");
+
     const exampleNote = "Example: Resolved issue with 'show all' for Feature B module.";
     const timeEstimateNote = "I only accept ranges like 0.5-1 hour, 1-2 hours, or 2-3 days. I just need one range answer.";
 
-    const prompt = `NOW_CHAT
-      
-      Based on the information I have provided, how could a note look like in Harvest?
+    let hintInfo = '';
+
+    if (args['--hint']) {
+        hintInfo = `
+      The user provided this hint for the note. Please incorporate it into your note: "${args['--hint']}"
+        `;
+    }
+
+    const prompt = `
+      Based on the information I have provided, how could a note look like for the client?
       The note should not be very technical, as it is for the client.
       
       ${exampleNote}
       
       Also, how long time would you estimate that the changes in the diff would take to implement?
       ${timeEstimateNote}
+
+      ${hintInfo}
       
       Please list those answers in points on new lines.
   
@@ -166,4 +273,7 @@ function copyLastMessageToClipboard() {
     clipboardy.writeSync(messages[messages.length - 1].content);
 }
 
-main();
+// args
+
+main(
+);

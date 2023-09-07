@@ -101,9 +101,8 @@ async function main() {
         }
     }
 
-    emptyLine()
     await executeEstimateFlow();
-    emptyLine()
+    emptyLine(2)
 
     exit(0);
 }

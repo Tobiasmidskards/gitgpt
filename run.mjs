@@ -39,7 +39,7 @@ async function resolveCommand(command) {
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (error || stderr) {
-                console.log(stdout, stderr);
+                console.log('ERRORS', error, stderr);
                 reject(error || stderr);
             }
             resolve(stdout);

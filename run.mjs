@@ -91,6 +91,8 @@ async function main() {
                 resolve(stdout);
             });
         });
+
+        consoleInfo("Done")
     }
 
     console.log("\n");

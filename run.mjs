@@ -40,7 +40,7 @@ async function resolveCommand(command) {
         exec(command, (error, stdout, stderr) => {
             if (error || stderr) {
                 if (stderr && stderr.includes('To github.com')) {
-                    resolve(stdout);
+                    resolve(stderr);
                 } else {
                     reject(error || stderr);
                 }

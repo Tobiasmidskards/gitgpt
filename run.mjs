@@ -144,13 +144,11 @@ async function executeStatusFlow() {
 }
 
 function consoleHeader(title) {
-    emptyLine();
     writeStdout("-------------------- " + title + " ---------------------");
     emptyLine();
 }
 
 function consoleInfo(title) {
-    emptyLine();
     writeStdout(">>>> " + title);
     emptyLine();
 }

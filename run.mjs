@@ -18,25 +18,29 @@ const configureStdout = (content, text) => {
     return content += text;
 };
 
+const showHelp = () => {
+    process.stdout.write(`
+        Usage: node run.mjs [--help] [--commit] [--estimate]
+
+        Defaults to all flows if no options are provided.
+        
+        Options:
+        --help      Show help
+        --commit    Run commit flow
+        --estimate  Run estimate flow
+        --hint      Provide a hint for the assistant
+        -A          Add all files to commit
+        -C          Commit and push directly to origin
+    `);
+    exit(0);
+}
+
 const args = await getArgs();
 
 async function main() {
 
     if (args['--help']) {
-        console.log(`
-            Usage: node run.mjs [--help] [--commit] [--estimate]
-
-            Defaults to all flows if no options are provided.
-            
-            Options:
-            --help      Show help
-            --commit    Run commit flow
-            --estimate  Run estimate flow
-            --hint      Provide a hint for the assistant
-            -A          Add all files to commit
-            -C          Commit and push directly to origin
-        `);
-        exit(0);
+        showHelp();
     }
 
     if (args['-A']) {

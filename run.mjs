@@ -58,6 +58,8 @@ async function main() {
     await executeCommitFlow();
 
     if (args['-C']) {
+        consoleInfo("Committing and pushing to origin");
+
         const commitCommand = messages[messages.length - 1].content;
 
         emptyLine()

@@ -31,7 +31,7 @@ const showHelp = () => {
         Defaults to all flows if no options are provided.
         
         Options:
-        --help      Show help
+        -h --help   Show help
         --commit    Run commit flow
         --estimate  Run estimate flow
         --hint      Provide a hint for the assistant
@@ -60,7 +60,7 @@ const args = await getArgs();
 
 async function main() {
 
-    if (args['--help']) {
+    if (args['--help'] || args['-h']) {
         showHelp();
     }
 
@@ -108,15 +108,30 @@ async function main() {
 }
 
 async function getArgs() {
-    const allowedArgs = ['--help', '--commit', '--estimate', '--hint', '-A', '-C'];
+    const allowedArgs = ['-h', '--help', '--commit', '--estimate', '--hint', '-A', '-C'];
     const rawArgs = process.argv.slice(2);
 
     const args = process.argv.slice(2).reduce((acc, arg) => {
         const [key, value] = arg.split('=');
-        const validArg = allowedArgs.includes(key);
-        if (validArg) {
-            acc[key] = value || true;
+
+        if (key.startsWith('--')) {
+            // Long arguments (--example)
+            const validArg = allowedArgs.includes(key);
+            if (validArg) {
+                acc[key] = value || true;
+            }
+        } else if (key.startsWith('-')) {
+            // Short arguments (-A, -C, -AC etc.)
+            for (let i = 1; i < key.length; i++) {
+                const shortArg = '-' + key[i];
+                if (allowedArgs.includes(shortArg)) {
+                    acc[shortArg] = true;
+                }
+
+                
+            }
         }
+
         return acc;
     }, {});
 
@@ -126,6 +141,7 @@ async function getArgs() {
 
     return args;
 }
+
 
 async function executeCommitFlow() {
     consoleHeader("COMMIT");

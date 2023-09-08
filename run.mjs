@@ -63,7 +63,7 @@ async function main() {
         
         emptyLine()
         consoleHeader("Committing and pushing to origin");
-        consoleInfo("Applying commit: " + commitCommand);
+        consoleInfo("Applying commit: " + commitCommand, 0);
 
         try {
             writeStdout(await resolveCommand(commitCommand));
@@ -275,16 +275,16 @@ function copyLastMessageToClipboard() {
     clipboardy.writeSync(messages[messages.length - 1].content);
 }
 
-function consoleHeader(title) {
-    emptyLine();
+function consoleHeader(title, l1 = 1, l2 = 2) {
+    emptyLine(l1);
     writeStdout("-------------------- " + title + " ---------------------", colors.header);
-    emptyLine(2);
+    emptyLine(l2);
 }
 
-function consoleInfo(title) {
-    emptyLine();
+function consoleInfo(title, l1 = 1, l2 = 2) {
+    emptyLine(l1);
     writeStdout(">>>> " + title, 34);
-    emptyLine();
+    emptyLine(l2);
 }
 
 const addMessage = (message, role = 'user') => messages.push({ role, content: message });

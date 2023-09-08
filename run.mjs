@@ -69,7 +69,7 @@ async function main() {
             writeStdout(await resolveCommand(commitCommand));
             consoleInfo("Pushing to origin");
             writeStdout(await resolveCommand("git push"));
-            consoleInfo("Done")
+            consoleInfo("Done", 1, 0)
         }
         catch (error) {
             if (!error.includes('To github.com')) {

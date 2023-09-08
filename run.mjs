@@ -281,7 +281,7 @@ function consoleHeader(title) {
 
 function consoleInfo(title) {
     emptyLine();
-    writeStdout(">>>> " + title);
+    writeStdout(">>>> " + title, 32);
     emptyLine();
 }
 
@@ -290,7 +290,20 @@ const configureStdout = (content, text) => {
     writeStdout(text);
     return content += text;
 };
-const writeStdout = (content) => process.stdout.write(content);
+
+const colors = {
+    assistant: 32,
+    user: 33,
+    system: 34,
+};
+
+const writeStdout = (content, color) => {
+    if (color) {
+        process.stdout.write(`\x1b[${color}m`);
+    }
+
+    process.stdout.write(content);
+}
 const emptyLine = (times = 1) => {
     for (let i = 0; i < times; i++) {
         writeStdout('\n');

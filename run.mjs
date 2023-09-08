@@ -275,7 +275,7 @@ function copyLastMessageToClipboard() {
 
 function consoleHeader(title) {
     emptyLine();
-    writeStdout("-------------------- " + title + " ---------------------");
+    writeStdout("-------------------- " + title + " ---------------------", colors.header);
     emptyLine(2);
 }
 
@@ -293,8 +293,8 @@ const configureStdout = (content, text) => {
 
 const colors = {
     assistant: 32,
-    user: 33,
     system: 34,
+    header: 33,
 };
 
 const writeStdout = (content, color) => {

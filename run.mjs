@@ -281,7 +281,7 @@ function consoleHeader(title) {
 
 function consoleInfo(title) {
     emptyLine();
-    writeStdout(">>>> " + title, 32);
+    writeStdout(">>>> " + title, 34);
     emptyLine();
 }
 
@@ -303,6 +303,10 @@ const writeStdout = (content, color) => {
     }
 
     process.stdout.write(content);
+
+    if (color) {
+        process.stdout.write('\x1b[0m');
+    }
 }
 const emptyLine = (times = 1) => {
     for (let i = 0; i < times; i++) {

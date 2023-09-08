@@ -12,18 +12,6 @@ const messages = [
     { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
 ];
 
-const addMessage = (message, role = 'user') => messages.push({ role, content: message });
-const configureStdout = (content, text) => {
-    writeStdout(text);
-    return content += text;
-};
-const writeStdout = (content) => process.stdout.write(content);
-const emptyLine = (times = 1) => {
-    for (let i = 0; i < times; i++) {
-        writeStdout('\n');
-    }
-};
-
 const showHelp = () => {
     process.stdout.write(`
         Usage: node run.mjs [--help] [--commit] [--estimate]
@@ -41,20 +29,7 @@ const showHelp = () => {
     exit(0);
 }
 
-async function resolveCommand(command) {
-    return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error || stderr) {
-                if (stderr && typeof stderr === 'string' && stderr.includes('To github.com')) {
-                    resolve(stderr);
-                } else {
-                    reject(error || stderr);
-                }
-            }
-            resolve(stdout);
-        });
-    });
-}
+
 
 const args = await getArgs();
 
@@ -67,7 +42,7 @@ async function main() {
     if (args['-A']) {
         await resolveCommand("git add -A");
     }
-    
+
     if (args['--commit']) {
         await executeCommitFlow();
         exit(0);
@@ -82,7 +57,7 @@ async function main() {
     await executeStatusFlow();
     await executeCommitFlow();
 
-    if(args['-C']) {
+    if (args['-C']) {
         const commitCommand = messages[messages.length - 1].content;
 
         emptyLine()
@@ -101,6 +76,7 @@ async function main() {
         }
     }
 
+    emptyLine()
     await executeEstimateFlow();
     emptyLine(2)
 
@@ -127,8 +103,6 @@ async function getArgs() {
                 if (allowedArgs.includes(shortArg)) {
                     acc[shortArg] = true;
                 }
-
-                
             }
         }
 
@@ -141,7 +115,6 @@ async function getArgs() {
 
     return args;
 }
-
 
 async function executeCommitFlow() {
     consoleHeader("COMMIT");
@@ -160,18 +133,6 @@ async function executeStatusFlow() {
     consoleHeader("STATUS");
     const status = await getStatus();
     writeStdout(status);
-}
-
-function consoleHeader(title) {
-    emptyLine();
-    writeStdout("-------------------- " + title + " ---------------------");
-    emptyLine(2);
-}
-
-function consoleInfo(title) {
-    emptyLine();
-    writeStdout(">>>> " + title);
-    emptyLine();
 }
 
 async function prepareCommitPrompt() {
@@ -285,23 +246,25 @@ async function streamAssistant(model = 'gpt-4') {
 }
 
 async function getStatus() {
-    return new Promise((resolve, reject) => {
-        exec("git status --porcelain --branch --short", (error, stdout, stderr) => {
-            if (error || stderr) {
-                reject(error || stderr);
-            }
-            resolve(stdout);
-        });
-    });
+    return await resolveCommand("git status --porcelain --branch --short");
 }
 
 async function getDiff() {
+    return await resolveCommand("git --no-pager diff -U5 --cached --line-prefix '$ '", "No changes to commit");
+}
+
+async function resolveCommand(command, defaultsTo = '') {
     return new Promise((resolve, reject) => {
-        exec("git --no-pager diff -U5 --cached --line-prefix '$ '", (error, stdout, stderr) => {
-            if (error || stderr) {
-                reject(error || stderr);
+        exec(command, (error, stdout, stderr) => {
+            if (stderr && typeof stderr === 'string' && stderr.includes('To github.com')) {
+                return resolve(stderr || defaultsTo);
             }
-            resolve(stdout || "No changes to commit");
+
+            if (error || stderr) {
+                return reject(error || stderr);
+            }
+
+            return resolve(stdout || defaultsTo);
         });
     });
 }
@@ -309,5 +272,29 @@ async function getDiff() {
 function copyLastMessageToClipboard() {
     clipboardy.writeSync(messages[messages.length - 1].content);
 }
+
+function consoleHeader(title) {
+    emptyLine();
+    writeStdout("-------------------- " + title + " ---------------------");
+    emptyLine(2);
+}
+
+function consoleInfo(title) {
+    emptyLine();
+    writeStdout(">>>> " + title);
+    emptyLine();
+}
+
+const addMessage = (message, role = 'user') => messages.push({ role, content: message });
+const configureStdout = (content, text) => {
+    writeStdout(text);
+    return content += text;
+};
+const writeStdout = (content) => process.stdout.write(content);
+const emptyLine = (times = 1) => {
+    for (let i = 0; i < times; i++) {
+        writeStdout('\n');
+    }
+};
 
 main();

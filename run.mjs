@@ -4,6 +4,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { exit } from 'process';
 import clipboardy from 'clipboardy';
+import readline from 'readline';
 
 dotenv.config({ path: `${path.dirname(process.argv[1])}/.env` });
 
@@ -29,11 +30,13 @@ const showHelp = () => {
     exit(0);
 }
 
-
-
 const args = await getArgs();
 
 async function main() {
+
+    if (args['--']) {
+        await executeCliHelpFlow();
+    }
 
     if (args['--help'] || args['-h']) {
         showHelp();
@@ -86,7 +89,7 @@ async function main() {
 }
 
 async function getArgs() {
-    const allowedArgs = ['-h', '--help', '--commit', '--estimate', '--hint', '-A', '-C'];
+    const allowedArgs = ['-h', '--help', '--commit', '--estimate', '--hint', '-A', '-C', '--'];
     const rawArgs = process.argv.slice(2);
 
     const args = process.argv.slice(2).reduce((acc, arg) => {
@@ -116,6 +119,48 @@ async function getArgs() {
     }
 
     return args;
+}
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+async function executeCliHelpFlow() {
+    consoleHeader("CLI HELP");
+
+    const cliHistory = await getCliHistory();
+
+    const userInput = await new Promise((resolve, reject) => {
+        rl.question("What is the problem? \n\n", (answer) => {
+            resolve(answer);
+        });
+    } );
+
+    const prompt = `
+    
+    Which Mac command would you use to solve this problem? 
+    The user provided this information:
+    ${userInput}
+    
+    This is the history of the user's last 50 commands:
+    ${cliHistory}
+    
+    Answer only with the command, not the explanation.
+    `;
+
+    addMessage(prompt);
+
+    writeStdout("\n");
+    await streamAssistant();
+
+    copyLastMessageToClipboard();
+
+    rl.close();
+
+    writeStdout("\n");
+
+    exit(0);
 }
 
 async function executeCommitFlow() {
@@ -253,6 +298,10 @@ async function getStatus() {
 
 async function getDiff() {
     return await resolveCommand("git --no-pager diff -U5 --cached --line-prefix '$ '", "No changes to commit");
+}
+
+async function getCliHistory() {
+    return await resolveCommand("cat ~/.zsh_history | tail -n 50");
 }
 
 async function resolveCommand(command, defaultsTo = '') {

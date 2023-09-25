@@ -109,7 +109,7 @@ async function main() {
 async function applyCommit() {
 
     if (await getNumberOfFiles() === 0 && !await branchIsAhead()) {
-        consoleInfo("No files to commit");
+        consoleInfo("No files to commit: <" + 'applyCommit' + ">");
         return;
     }
 

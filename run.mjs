@@ -23,12 +23,16 @@ const showHelp = () => {
         Defaults to all flows if no options are provided.
         
         Options:
-        -h --help   Show help
-        --commit    Run commit flow
-        --estimate  Run estimate flow
-        --hint      Provide a hint for the assistant
-        -A          Add all files to commit
-        -C          Commit and push directly to origin
+        -h --help   
+        -C --commit     Get commit message
+        -E --estimate   Get estimate
+        -P --push       Push to origin
+        -A --add        Add all files
+        -v --verbose    Show verbose output
+        --hint          Provide hint for the assistant
+        gg              Add all files, get commit message and push to origin
+        --              Get CLI help
+
     `);
 }
 
@@ -138,7 +142,7 @@ async function branchIsAhead() {
 async function push() {
 
     if (await getNumberOfFiles() === 0 && !await branchIsAhead()) {
-        consoleInfo("No files to commit");
+        consoleInfo("No files to commit"); 
         return;
     }
 

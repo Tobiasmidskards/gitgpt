@@ -57,7 +57,6 @@ function addToQueue(command, args = {}) {
 }
 
 async function main() {
-
     const argLength = Object.keys(args).length;
 
     if (args['--verbose'] || args['-v']) {
@@ -74,15 +73,15 @@ async function main() {
         addToQueue(() => exit(0));
     }
 
-    if (args['--add'] || args['-A']) {
+    if (args['--add'] || args['-A'] || args['gg']) {
         addToQueue(resolveCommand, "git add -A");
     }
 
-    if (args['--commit'] || args['-C']) {
+    if (args['--commit'] || args['-C'] || args['gg']) {
         addToQueue(executeGetCommitMessageFlow);
     }
 
-    if (args['-P'] || args['--push']) {
+    if (args['-P'] || args['--push'] || args['gg']) {
         addToQueue(applyCommit);
         addToQueue(push);
     }
@@ -91,7 +90,7 @@ async function main() {
         addToQueue(executeEstimateFlow);
     }
 
-    if (argLength === 0) {
+    if (argLength === 0 || args['-A'] || args['--add']) {
         // Takes all added files and gets the commit message
         addToQueue(executeStatusFlow);
         addToQueue(executeGetCommitMessageFlow);
@@ -103,6 +102,11 @@ async function main() {
 }
 
 async function applyCommit() {
+
+    if (await getNumberOfFiles() === 0) {
+        consoleInfo("No files to commit");
+        return;
+    }
 
     if (!commitMessage) {
         await executeGetCommitMessageFlow();
@@ -118,7 +122,18 @@ async function applyCommit() {
     }
 }
 
+async function getNumberOfFiles() {
+    const command = 'git diff --cached --name-only | wc -l';
+    const numberOfFiles = await resolveCommand(command);
+    return parseInt(numberOfFiles);
+}
+
 async function push() {
+
+    if (await getNumberOfFiles() === 0) {
+        consoleInfo("No files to commit");
+        return;
+    }
 
     try {
         consoleInfo("Pushing to origin");
@@ -149,7 +164,8 @@ async function getArgs() {
         '--hint', 
         '-A', 
         '-C', 
-        '--'
+        '--',
+        'gg'
     ];
     const rawArgs = process.argv.slice(2);
 
@@ -170,6 +186,9 @@ async function getArgs() {
                     acc[shortArg] = true;
                 }
             }
+        } else if (key === 'gg') {
+            // Git aliases
+            acc[key] = true;
         }
 
         return acc;
@@ -225,6 +244,11 @@ async function executeCliHelpFlow() {
 }
 
 async function executeGetCommitMessageFlow() {
+    if (await getNumberOfFiles() === 0) {
+        consoleInfo("No files to commit");
+        return;
+    }
+
     consoleHeader("COMMIT");
     await prepareCommitMessagePrompt();
     await streamAssistant();

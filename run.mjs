@@ -76,6 +76,8 @@ async function main() {
 
     if (args['-A']) {
         addToQueue(resolveCommand, "git add -A");
+        addToQueue(executeCommitFlow);
+        addToQueue(commitAndPush);
     }
 
     if (args['-C']) {

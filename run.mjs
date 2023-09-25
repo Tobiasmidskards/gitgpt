@@ -399,7 +399,7 @@ async function getCliHistory() {
 
 async function resolveCommand(command, defaultsTo = '') {
 
-    consoleInfo("Resolving command: " + command);
+    consoleInfo("Resolving command: " + command, 1, 1, true);
 
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
@@ -438,7 +438,7 @@ function consoleInfo(title, l1 = 1, l2 = 2, onlyVerbose = false) {
     if (!verbose && onlyVerbose) {
         return;
     }
-    
+
     emptyLine(l1);
     writeStdout(">>>> " + title, 34);
     emptyLine(l2);

@@ -142,7 +142,7 @@ async function branchIsAhead() {
 async function push() {
 
     if (await getNumberOfFiles() === 0 && !await branchIsAhead()) {
-        consoleInfo("No files to commit"); 
+        consoleInfo("No files to commit: <" + 'push' + ">");
         return;
     }
 
@@ -256,7 +256,7 @@ async function executeCliHelpFlow() {
 
 async function executeGetCommitMessageFlow() {
     if (await getNumberOfFiles() === 0) {
-        consoleInfo("No files to commit");
+        consoleInfo("No files to commit: <" + 'executeGetCommitMessageFlow' + ">");
         return;
     }
 

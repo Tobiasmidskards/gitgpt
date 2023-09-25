@@ -116,7 +116,7 @@ async function applyCommit() {
     consoleInfo("Applying commit with command: " + commitMessage, 2, 1, true);
 
     try {
-        writeStdout(await resolveCommand(commitMessage));
+        await resolveCommand(commitMessage);
     }
     catch (error) {
         throw error;

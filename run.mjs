@@ -113,7 +113,7 @@ async function applyCommit() {
         await executeGetCommitMessageFlow();
     }
 
-    consoleInfo("Applying commit with command: " + commitMessage);
+    consoleInfo("Applying commit with command: " + commitMessage, 2, 1, true);
 
     try {
         writeStdout(await resolveCommand(commitMessage));

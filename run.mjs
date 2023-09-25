@@ -27,7 +27,6 @@ const showHelp = () => {
         -A          Add all files to commit
         -C          Commit and push directly to origin
     `);
-    exit(0);
 }
 
 const args = await getArgs();
@@ -38,13 +37,13 @@ async function runQueue() {
     
     if (queue.length > 0) {
         const { command, args } = queue.shift();
-        consoleInfo("Running queue: " + command.name);
+        consoleInfo("Running: [" + (command.name || command) + "]", 1);
         await command(args);
         await runQueue();
         return;
     }
 
-    consoleInfo("Queue is empty");
+    consoleInfo("Done", 2);
 }
 
 function addToQueue(command, args = {}) {
@@ -60,34 +59,34 @@ async function main() {
 
     if (args['--help'] || args['-h']) {
         showHelp();
+        addToQueue(() => exit(0));
     }
 
     if (args['--'] && argLength === 1) {
         addToQueue(executeCliHelpFlow);
+        addToQueue(() => exit(0));
     }
 
-    if (args['--commit']) {
-        addToQueue(executeCommitFlow);
+    if (args['--add'] || args['-A']) {
+        addToQueue(resolveCommand, "git add -A");
     }
 
-    if (args['--estimate']) {
+    if (args['--commit'] || args['-C']) {
+        addToQueue(executeGetCommitMessageFlow);
+    }
+
+    if (args['-P'] || args['--push']) {
+        addToQueue(push);
+    }
+
+    if (args['--estimate'] || args['-E']) {
         addToQueue(executeEstimateFlow);
     }
 
-    if (args['-A']) {
-        addToQueue(resolveCommand, "git add -A");
-        addToQueue(executeCommitFlow);
-        addToQueue(commitAndPush);
-    }
-
-    if (args['-C']) {
-        addToQueue(executeCommitFlow);
-        addToQueue(commitAndPush);
-    }
-
     if (argLength === 0) {
+        // Takes all added files and gets the commit message
         addToQueue(executeStatusFlow);
-        addToQueue(executeCommitFlow);
+        addToQueue(executeGetCommitMessageFlow);
     }
 
     await runQueue();
@@ -95,16 +94,24 @@ async function main() {
     exit(0);
 }
 
-async function commitAndPush() {
-    const commitCommand = messages[messages.length - 1].content;
+async function applyCommit(commitCommand) {
 
-    emptyLine()
-
-    consoleHeader("Committing and pushing to origin");
-    consoleInfo("Applying commit: " + commitCommand, 0);
+    consoleInfo("Applying commit with command: " + commitCommand);
 
     try {
         writeStdout(await resolveCommand(commitCommand));
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+async function push(commitCommand = null) {
+    commitCommand = commitCommand || messages[messages.length - 1].content;
+
+    consoleInfo("Pushing to origin");
+
+    try {
         consoleInfo("Pushing to origin");
         writeStdout(await resolveCommand("git push"));
         consoleInfo("Done", 1, 0)
@@ -180,23 +187,25 @@ async function executeCliHelpFlow() {
 
     addMessage(prompt);
 
-    writeStdout("\n");
+    emptyLine();
+
     await streamAssistant();
 
     copyLastMessageToClipboard();
 
     rl.close();
 
-    writeStdout("\n");
+    emptyLine(2);
 
-    exit(0);
 }
 
-async function executeCommitFlow() {
+async function executeGetCommitMessageFlow() {
     consoleHeader("COMMIT");
-    await prepareCommitPrompt();
+    await prepareCommitMessagePrompt();
     await streamAssistant();
     copyLastMessageToClipboard();
+
+    return getLatestMessage();
 }
 
 async function executeEstimateFlow() {
@@ -211,8 +220,8 @@ async function executeStatusFlow() {
     writeStdout(status);
 }
 
-async function prepareCommitPrompt() {
-    const commitPrompt = buildCommitPrompt(await getDiff());
+async function prepareCommitMessagePrompt() {
+    const commitPrompt = buildCommitMessagePrompt(await getDiff());
     addMessage(commitPrompt);
 }
 
@@ -221,7 +230,7 @@ async function prepareEstimatePrompt() {
     addMessage(estimatePrompt);
 }
 
-function buildCommitPrompt(diff) {
+function buildCommitMessagePrompt(diff) {
     const rules = `
       Commit Message Rules:
       1. Use the imperative mood ("Add" instead of "Adds" or "Added").
@@ -334,6 +343,9 @@ async function getCliHistory() {
 }
 
 async function resolveCommand(command, defaultsTo = '') {
+
+    consoleInfo("Resolving command: " + command);
+
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (stderr && typeof stderr === 'string' && stderr.includes('To github.com')) {
@@ -350,7 +362,11 @@ async function resolveCommand(command, defaultsTo = '') {
 }
 
 function copyLastMessageToClipboard() {
-    clipboardy.writeSync(messages[messages.length - 1].content);
+    clipboardy.writeSync(getLatestMessage());
+}
+
+function getLatestMessage() {
+    return messages[messages.length - 1].content;
 }
 
 function consoleHeader(title, l1 = 1, l2 = 2) {

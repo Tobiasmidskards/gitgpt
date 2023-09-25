@@ -143,7 +143,7 @@ async function push() {
     }
 
     try {
-        consoleInfo("Pushing to origin", 2, 1);
+        consoleInfo("Pushing to origin", 2, 2);
         writeStdout(await resolveCommand("git push"));
     }
     catch (error) {

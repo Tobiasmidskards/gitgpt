@@ -424,13 +424,21 @@ function getLatestMessage() {
     return messages[messages.length - 1].content;
 }
 
-function consoleHeader(title, l1 = 1, l2 = 2) {
+function consoleHeader(title, l1 = 1, l2 = 2, onlyVerbose = false) {
+    if (!verbose && onlyVerbose) {
+        return;
+    }
+
     emptyLine(l1);
     writeStdout("-------------------- " + title + " ---------------------", colors.header);
     emptyLine(l2);
 }
 
-function consoleInfo(title, l1 = 1, l2 = 2) {
+function consoleInfo(title, l1 = 1, l2 = 2, onlyVerbose = false) {
+    if (!verbose && onlyVerbose) {
+        return;
+    }
+    
     emptyLine(l1);
     writeStdout(">>>> " + title, 34);
     emptyLine(l2);

@@ -8,6 +8,9 @@ import readline from 'readline';
 
 dotenv.config({ path: `${path.dirname(process.argv[1])}/.env` });
 
+let verbose = false;
+let commitMessage = null;
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages = [
     { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
@@ -57,6 +60,10 @@ async function main() {
 
     const argLength = Object.keys(args).length;
 
+    if (args['--verbose'] || args['-v']) {
+        verbose = true;
+    }
+
     if (args['--help'] || args['-h']) {
         showHelp();
         addToQueue(() => exit(0));
@@ -76,6 +83,7 @@ async function main() {
     }
 
     if (args['-P'] || args['--push']) {
+        addToQueue(applyCommit);
         addToQueue(push);
     }
 
@@ -94,27 +102,27 @@ async function main() {
     exit(0);
 }
 
-async function applyCommit(commitCommand) {
+async function applyCommit() {
 
-    consoleInfo("Applying commit with command: " + commitCommand);
+    if (!commitMessage) {
+        await executeGetCommitMessageFlow();
+    }
+
+    consoleInfo("Applying commit with command: " + commitMessage);
 
     try {
-        writeStdout(await resolveCommand(commitCommand));
+        writeStdout(await resolveCommand(commitMessage));
     }
     catch (error) {
         throw error;
     }
 }
 
-async function push(commitCommand = null) {
-    commitCommand = commitCommand || messages[messages.length - 1].content;
-
-    consoleInfo("Pushing to origin");
+async function push() {
 
     try {
         consoleInfo("Pushing to origin");
         writeStdout(await resolveCommand("git push"));
-        consoleInfo("Done", 1, 0)
     }
     catch (error) {
         // if (!error.includes('To github.com')) {
@@ -125,7 +133,24 @@ async function push(commitCommand = null) {
 }
 
 async function getArgs() {
-    const allowedArgs = ['-h', '--help', '--commit', '--estimate', '--hint', '-A', '-C', '--'];
+    const allowedArgs = [
+        '-h', 
+        '--help', 
+        '-E',
+        '--estimate',
+        '-C',
+        '--commit', 
+        '-P',
+        '--push',
+        '-A',
+        '--add',
+        '-v',
+        '--verbose',
+        '--hint', 
+        '-A', 
+        '-C', 
+        '--'
+    ];
     const rawArgs = process.argv.slice(2);
 
     const args = process.argv.slice(2).reduce((acc, arg) => {
@@ -205,7 +230,7 @@ async function executeGetCommitMessageFlow() {
     await streamAssistant();
     copyLastMessageToClipboard();
 
-    return getLatestMessage();
+    commitMessage = getLatestMessage();
 }
 
 async function executeEstimateFlow() {

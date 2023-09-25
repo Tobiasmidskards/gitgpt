@@ -46,7 +46,8 @@ async function runQueue() {
         return;
     }
 
-    consoleInfo("Done", 2, 2, true);
+    consoleInfo("Done", 2, 0, true);
+    emptyLine(2);
 }
 
 function addToQueue(command, args = {}) {

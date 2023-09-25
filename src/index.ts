@@ -6,7 +6,7 @@ import { exit } from 'process';
 import clipboardy from 'clipboardy';
 import readline from 'readline';
 
-dotenv.config({ path: `${path.dirname(process.argv[1])}/.env` });
+dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 
 let verbose = false;
 let commitMessage: string | null = null;

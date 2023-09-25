@@ -103,7 +103,7 @@ async function main() {
 
 async function applyCommit() {
 
-    if (await getNumberOfFiles() === 0) {
+    if (await getNumberOfFiles() === 0 && !await branchIsAhead()) {
         consoleInfo("No files to commit");
         return;
     }
@@ -128,9 +128,15 @@ async function getNumberOfFiles() {
     return parseInt(numberOfFiles);
 }
 
+async function branchIsAhead() {
+    const command = "git status | grep 'Your branch is ahead' | wc -l";
+    const isAhead = await resolveCommand(command);
+    return parseInt(isAhead) > 0;
+}
+
 async function push() {
 
-    if (await getNumberOfFiles() === 0) {
+    if (await getNumberOfFiles() === 0 && !await branchIsAhead()) {
         consoleInfo("No files to commit");
         return;
     }

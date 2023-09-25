@@ -21,6 +21,7 @@ const messages: {
     ];
 
 const showHelp = () => {
+    
     process.stdout.write(`
         Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--hint] [gg] [--]
 

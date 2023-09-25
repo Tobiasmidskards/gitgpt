@@ -32,60 +32,87 @@ const showHelp = () => {
 
 const args = await getArgs();
 
+const queue = [];
+
+async function runQueue() {
+    
+    if (queue.length > 0) {
+        const { command, args } = queue.shift();
+        consoleInfo("Running queue: " + command.name);
+        await command(args);
+        await runQueue();
+        return;
+    }
+
+    consoleInfo("Queue is empty");
+}
+
+function addToQueue(command, args = {}) {
+    queue.push({
+        command,
+        args
+    });
+}
+
 async function main() {
 
-    if (args['--']) {
-        await executeCliHelpFlow();
-    }
+    const argLength = Object.keys(args).length;
 
     if (args['--help'] || args['-h']) {
         showHelp();
     }
 
-    if (args['-A']) {
-        await resolveCommand("git add -A");
+    if (args['--'] && argLength === 1) {
+        addToQueue(executeCliHelpFlow);
     }
 
     if (args['--commit']) {
-        await executeCommitFlow();
-        exit(0);
+        addToQueue(executeCommitFlow);
     }
 
     if (args['--estimate']) {
-        await prepareCommitPrompt();
-        await executeEstimateFlow();
-        exit(0);
+        addToQueue(executeEstimateFlow);
     }
 
-    await executeStatusFlow();
-    await executeCommitFlow();
+    if (args['-A']) {
+        addToQueue(resolveCommand, "git add -A");
+    }
 
     if (args['-C']) {
-        
-        const commitCommand = messages[messages.length - 1].content;
-        
-        emptyLine()
-        consoleHeader("Committing and pushing to origin");
-        consoleInfo("Applying commit: " + commitCommand, 0);
-
-        try {
-            writeStdout(await resolveCommand(commitCommand));
-            consoleInfo("Pushing to origin");
-            writeStdout(await resolveCommand("git push"));
-            consoleInfo("Done", 1, 0)
-        }
-        catch (error) {
-            if (!error.includes('To github.com')) {
-                console.error(error);
-            }
-        }
+        addToQueue(executeCommitFlow);
+        addToQueue(commitAndPush);
     }
 
-    emptyLine()
-    await executeEstimateFlow();
-    emptyLine(2)
+    if (argLength === 0) {
+        addToQueue(executeStatusFlow);
+        addToQueue(executeCommitFlow);
+    }
+
+    await runQueue();
 
     exit(0);
+}
+
+async function commitAndPush() {
+    const commitCommand = messages[messages.length - 1].content;
+
+    emptyLine()
+
+    consoleHeader("Committing and pushing to origin");
+    consoleInfo("Applying commit: " + commitCommand, 0);
+
+    try {
+        writeStdout(await resolveCommand(commitCommand));
+        consoleInfo("Pushing to origin");
+        writeStdout(await resolveCommand("git push"));
+        consoleInfo("Done", 1, 0)
+    }
+    catch (error) {
+        // if (!error.includes('To github.com')) {
+        //     console.error(error);
+        // }
+        console.error(error);
+    }
 }
 
 async function getArgs() {

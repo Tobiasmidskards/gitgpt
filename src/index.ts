@@ -12,6 +12,7 @@ dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 
 let verbose = false;
 let commitMessage: string | null = null;
+let voice = false;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages: {
@@ -78,6 +79,10 @@ async function main() {
 
     if (args['--verbose'] || args['-v']) {
         verbose = true;
+    }
+
+    if (args['--voice']) {
+        voice = true;
     }
 
     if (args['--help'] || args['-h']) {
@@ -188,7 +193,8 @@ async function getArgs() {
         '-A',
         '-C',
         '--',
-        'gg'
+        'gg',
+        '--voice'
     ];
     const rawArgs = process.argv.slice(2);
 
@@ -405,6 +411,8 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
 }
 
 async function speechAssistant(message: string, model = 'tts-1', voice = 'nova') {
+    if (!voice) { return; }
+
     const speechFile = path.resolve("./speech.mp3");
 
     const mp3 = await openai.audio.speech.create({

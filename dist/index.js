@@ -320,7 +320,16 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
         const text = part.choices[0]?.delta?.content || '';
         content = configureStdout(content, text);
     }
+    await speechAssistant();
     addMessage(content, 'assistant');
+}
+async function speechAssistant(model = 'tts-1', voice = 'alloy') {
+    const response = await openai.audio.speech.create({
+        model: model,
+        input: 'Hello, world!',
+        voice: voice
+    });
+    console.log(response);
 }
 async function getStatus() {
     return await resolveCommand("git status --porcelain --branch --short");

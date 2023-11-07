@@ -405,7 +405,7 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
 async function speechAssistant(model = 'tts-1', voice = 'alloy') {
     const response = await openai.audio.speech.create({
         model: model,
-        input: messages[messages.length - 1].content,
+        input: 'Hello, world!',
         voice: voice as any
     });
 

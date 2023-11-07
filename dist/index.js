@@ -322,20 +322,26 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
         const text = part.choices[0]?.delta?.content || '';
         content = configureStdout(content, text);
     }
-    await speechAssistant();
+    await speechAssistant(content);
     addMessage(content, 'assistant');
 }
-async function speechAssistant(model = 'tts-1', voice = 'alloy') {
+async function speechAssistant(message, model = 'tts-1', voice = 'alloy') {
     const speechFile = path.resolve("./speech.mp3");
+    console.log("Speech file: " + speechFile);
     const mp3 = await openai.audio.speech.create({
         model: model,
-        input: 'Hello, world!',
+        input: message,
         voice: voice
     });
     const buffer = Buffer.from(await mp3.arrayBuffer());
     await fs.promises.writeFile(speechFile, buffer);
     const player = play();
     player.play(speechFile, (err) => {
+        if (err) {
+            console.error(err);
+        }
+    });
+    fs.unlink(speechFile, (err) => {
         if (err) {
             console.error(err);
         }

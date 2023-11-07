@@ -397,7 +397,19 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
         content = configureStdout(content, text);
     }
 
+    await speechAssistant();
+
     addMessage(content, 'assistant');
+}
+
+async function speechAssistant(model = 'tts-1', voice = 'alloy') {
+    const response = await openai.audio.speech.create({
+        model: model,
+        input: messages[messages.length - 1].content,
+        voice: voice as any
+    });
+
+    console.log(response);
 }
 
 async function getStatus() {

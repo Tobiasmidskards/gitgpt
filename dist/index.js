@@ -10,7 +10,7 @@ import fs from 'fs';
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage = null;
-let voice = false;
+let useVoice = false;
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages = [
     { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
@@ -63,7 +63,7 @@ async function main() {
         verbose = true;
     }
     if (args['--voice']) {
-        voice = true;
+        useVoice = true;
     }
     if (args['--help'] || args['-h']) {
         showHelp();
@@ -330,8 +330,8 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
     await speechAssistant(content);
     addMessage(content, 'assistant');
 }
-async function speechAssistant(message, model = 'tts-1', voice = 'nova') {
-    if (!voice) {
+async function speechAssistant(message, model = 'tts-1', voice = 'onyx') {
+    if (!useVoice) {
         return;
     }
     const speechFile = path.resolve("./speech.mp3");

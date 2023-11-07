@@ -404,10 +404,8 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
     addMessage(content, 'assistant');
 }
 
-async function speechAssistant(message: string, model = 'tts-1', voice = 'alloy') {
+async function speechAssistant(message: string, model = 'tts-1', voice = 'nova') {
     const speechFile = path.resolve("./speech.mp3");
-
-    console.log("Speech file: " + speechFile);
 
     const mp3 = await openai.audio.speech.create({
         model: model,

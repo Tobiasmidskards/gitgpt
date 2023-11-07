@@ -330,7 +330,7 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
     await speechAssistant(content);
     addMessage(content, 'assistant');
 }
-async function speechAssistant(message, model = 'tts-1', voice = 'onyx') {
+async function speechAssistant(message, model = 'tts-1', voice = 'nova') {
     if (!useVoice) {
         return;
     }

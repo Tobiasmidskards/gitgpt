@@ -5,6 +5,7 @@ import { exec } from 'child_process';
 import { exit } from 'process';
 import clipboardy from 'clipboardy';
 import readline from 'readline';
+import fs from 'fs';
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage = null;
@@ -324,12 +325,14 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
     addMessage(content, 'assistant');
 }
 async function speechAssistant(model = 'tts-1', voice = 'alloy') {
-    const response = await openai.audio.speech.create({
+    const speechFile = path.resolve("./speech.mp3");
+    const mp3 = await openai.audio.speech.create({
         model: model,
         input: 'Hello, world!',
         voice: voice
     });
-    console.log(response);
+    const buffer = Buffer.from(await mp3.arrayBuffer());
+    await fs.promises.writeFile(speechFile, buffer);
 }
 async function getStatus() {
     return await resolveCommand("git status --porcelain --branch --short");

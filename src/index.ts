@@ -506,7 +506,7 @@ const colors = {
     header: 33,
 } as const;
 
-const writeStdout = (content: string, color: number | null = null) => {
+const writeStdout = (content: string, color: number | null = null) => { 
     if (color) {
         process.stdout.write(`\x1b[${color}m`);
     }

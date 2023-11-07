@@ -426,11 +426,6 @@ async function speechAssistant(message: string, model = 'tts-1', voice = 'alloy'
         }
     });
 
-    fs.unlink(speechFile, (err) => {
-        if (err) {
-            console.error(err);
-        }
-    });
 }
 
 async function getStatus() {

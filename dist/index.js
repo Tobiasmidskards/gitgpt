@@ -341,11 +341,6 @@ async function speechAssistant(message, model = 'tts-1', voice = 'alloy') {
             console.error(err);
         }
     });
-    fs.unlink(speechFile, (err) => {
-        if (err) {
-            console.error(err);
-        }
-    });
 }
 async function getStatus() {
     return await resolveCommand("git status --porcelain --branch --short");

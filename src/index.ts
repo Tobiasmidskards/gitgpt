@@ -384,7 +384,7 @@ function buildEstimatePrompt() {
 }
 
 
-async function streamAssistant(model = 'gpt-4') {
+async function streamAssistant(model = 'gpt-4-1106-preview') {
     let content = '';
     const stream = await openai.chat.completions.create({
         model,

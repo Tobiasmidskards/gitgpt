@@ -410,7 +410,7 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
     addMessage(content, 'assistant');
 }
 
-async function speechAssistant(message: string, model = 'tts-1', voice = 'nova') {
+async function speechAssistant(message: string, model = 'tts-1', voice = 'onyx') {
     if (!voice) { return; }
 
     const speechFile = path.resolve("./speech.mp3");

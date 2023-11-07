@@ -23,7 +23,7 @@ const messages: {
         { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
     ];
 
-const showHelp = () => {
+const showHelp = () => { 
     process.stdout.write(`
         Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--hint] [gg] [--]
 
@@ -410,7 +410,7 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
     addMessage(content, 'assistant');
 }
 
-async function speechAssistant(message: string, model = 'tts-1', voice = 'nova') {
+async function speechAssistant(message: string, model = 'tts-1', voice = 'alloy') {
     if (!useVoice) { return; }
 
     const speechFile = path.resolve("./speech.mp3");

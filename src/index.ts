@@ -5,6 +5,7 @@ import { exec } from 'child_process';
 import { exit } from 'process';
 import clipboardy from 'clipboardy';
 import readline from 'readline';
+import play from 'play-sound';
 import fs from 'fs';
 
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
@@ -414,6 +415,14 @@ async function speechAssistant(model = 'tts-1', voice = 'alloy') {
 
     const buffer = Buffer.from(await mp3.arrayBuffer());
     await fs.promises.writeFile(speechFile, buffer);
+
+    const player = play();
+
+    player.play(speechFile, (err) => {
+        if (err) {
+            console.error(err);
+        }
+    });
 }
 
 async function getStatus() {

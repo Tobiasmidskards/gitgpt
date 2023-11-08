@@ -12,6 +12,7 @@ dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage = null;
 let useVoice = false;
+const tokenLimit = 128000 / 2;
 const encoder = await encodingForModel("gpt-4");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages = [
@@ -241,8 +242,59 @@ async function executeStatusFlow() {
     writeStdout(status);
 }
 async function prepareCommitMessagePrompt() {
-    const commitPrompt = buildCommitMessagePrompt(await getDiff());
+    const diff = await getDiff();
+    if (encoder.encode(diff).length > tokenLimit) {
+        consoleInfo("Diff is too big, splitting into two chunks", 1, 1, true);
+        await splitBigDiff(diff);
+        return;
+    }
+    consoleInfo("Diff is: " + diff, 1, 1, true);
+    const commitPrompt = buildCommitMessagePrompt(diff);
     addMessage(commitPrompt);
+}
+function splitStringInHalf(str) {
+    // Calculate the index at which to split the string.
+    // If the length is odd, the first half will be smaller by one character.
+    const index = Math.ceil(str.length / 2);
+    // Use the calculated index to split the string into two halves.
+    const firstHalf = str.substring(0, index);
+    const secondHalf = str.substring(index);
+    return [firstHalf, secondHalf];
+}
+async function splitBigDiff(diff) {
+    const diffChunks = splitStringInHalf(diff);
+    consoleInfo("Diff is too big, splitting into two chunks", 1, 1, true);
+    const allMessages = [];
+    for (let i = 0; i < diffChunks.length; i++) {
+        const chunk = diffChunks[i];
+        const prompt = buildCommitMessagePrompt(chunk);
+        const result = await streamAssistant(false, [
+            { role: 'user', content: prompt }
+        ]);
+        allMessages.push(result);
+    }
+    const message = allMessages.join('');
+    const rules = `
+      Commit Message Rules:
+      1. Use the imperative mood ("Add" instead of "Adds" or "Added").
+      2. Start with a capital letter.
+      3. Do not end with a period.
+      4. Summarize the change, not the reason for it.
+      5. Keep it concise, max 50 characters.
+      6. Make it clear and descriptive.
+      7. English only.
+      8. Single-line format.
+      
+      Example: git commit -m "Add login feature"
+
+      Combine the following messages into one commit message: 
+    `;
+    const messagePayload = rules + "\n\n" + message;
+    const result = await streamAssistant(false, [
+        { role: 'user', content: messagePayload },
+    ]);
+    addMessage(messagePayload);
+    addMessage(result, 'assistant');
 }
 async function prepareEstimatePrompt() {
     const estimatePrompt = buildEstimatePrompt();
@@ -286,7 +338,6 @@ function buildCommitMessagePrompt(diff) {
     `;
     // Remove any extra spaces and add the diff at the end
     prompt = prompt.replace(/ {2,}/g, ' ') + diff;
-    console.log(encoder.encode(prompt));
     return prompt;
 }
 function buildEstimatePrompt() {
@@ -319,11 +370,11 @@ function buildEstimatePrompt() {
     // Remove any extra spaces and return
     return prompt.replace(/ {2,}/g, ' ');
 }
-async function streamAssistant(model = 'gpt-4-1106-preview') {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-1106-preview') {
     let content = '';
     const stream = await openai.chat.completions.create({
         model,
-        messages,
+        messages: overrideMessages || messages,
         stream: true
     });
     for await (const part of stream) {
@@ -331,7 +382,10 @@ async function streamAssistant(model = 'gpt-4-1106-preview') {
         content = configureStdout(content, text);
     }
     await speechAssistant(content);
-    addMessage(content, 'assistant');
+    if (save) {
+        addMessage(content, 'assistant');
+    }
+    return content;
 }
 async function speechAssistant(message, model = 'tts-1', voice = 'alloy') {
     if (!useVoice) {
@@ -397,7 +451,10 @@ function consoleInfo(title, l1 = 1, l2 = 2, onlyVerbose = false) {
     writeStdout(">>>> " + title, 34);
     emptyLine(l2);
 }
-const addMessage = (message, role = 'user') => messages.push({ role, content: message });
+const addMessage = (message, role = 'user') => {
+    consoleInfo("Adding message: " + message, 1, 1, true);
+    messages.push({ role, content: message });
+};
 const configureStdout = (content, text) => {
     writeStdout(text);
     return content += text;

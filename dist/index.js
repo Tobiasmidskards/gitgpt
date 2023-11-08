@@ -7,10 +7,12 @@ import clipboardy from 'clipboardy';
 import readline from 'readline';
 import play from 'play-sound';
 import fs from 'fs';
+import { encodingForModel } from "js-tiktoken";
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage = null;
 let useVoice = false;
+const encoder = await encodingForModel("gpt-4");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages = [
     { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
@@ -284,6 +286,7 @@ function buildCommitMessagePrompt(diff) {
     `;
     // Remove any extra spaces and add the diff at the end
     prompt = prompt.replace(/ {2,}/g, ' ') + diff;
+    console.log(encoder.encode(prompt));
     return prompt;
 }
 function buildEstimatePrompt() {

@@ -6,6 +6,7 @@
     "clipboardy": "^3.0.0",
     "dotenv": "^16.0.3",
     "gpt-3-encoder": "^1.1.4",
+    "js-tiktoken": "^1.0.7",
     "mac-windows": "^1.0.0",
     "openai": "^4.16.1",
     "play-sound": "^1.1.6"

@@ -2,6 +2,8 @@
 
 set -e
 
+rm -rf gitgpt
+
 echo "Cloning the repository..."
 git clone https://github.com/tobiasmidskards/gitgpt.git
 echo "Cloned the repository."

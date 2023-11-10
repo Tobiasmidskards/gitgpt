@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import path from 'path';

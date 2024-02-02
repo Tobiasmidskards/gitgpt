@@ -528,7 +528,12 @@ async function getDiff() {
 }
 
 async function getCliHistory() {
-    return await resolveCommand("cat ~/.zsh_history | tail -n 50");
+    try {
+        return await resolveCommand("cat ~/.zsh_history | tail -n 50");
+    }
+    catch (error) {
+        return "No history found";
+    }
 }
 
 async function resolveCommand(command: string, defaultsTo = ''): Promise<string> {

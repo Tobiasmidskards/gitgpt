@@ -414,7 +414,12 @@ async function getDiff() {
     return await resolveCommand("git --no-pager diff -U5 --cached --line-prefix '$ '", "No changes to commit");
 }
 async function getCliHistory() {
-    return await resolveCommand("cat ~/.zsh_history | tail -n 50");
+    try {
+        return await resolveCommand("cat ~/.zsh_history | tail -n 50");
+    }
+    catch (error) {
+        return "No history found";
+    }
 }
 async function resolveCommand(command, defaultsTo = '') {
     consoleInfo("Resolving command: " + command, 1, 1, true);

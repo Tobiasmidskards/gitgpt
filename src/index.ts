@@ -602,7 +602,7 @@ const addMessage = (message: string, role: 'assistant' | 'system' | 'user'
         messages.push({ role, content: message });
     }
 const configureStdout = (content: string, text: string) => {
-    writeStdout(text);
+    writeStdout(text, colors.assistant);
     return content += text;
 };
 

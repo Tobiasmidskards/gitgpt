@@ -203,7 +203,13 @@ async function executeCliHelpFlow() {
             resolve(answer);
         });
     });
+    const rules = `
+      1. Single-line format.
+      2. Do NOT try to format it like code / include \`\`\` in the message.
+    `;
     const prompt = `
+    Rules:
+    ${rules}
     
     Which Mac command would you use to solve this problem? 
     The user provided this information:
@@ -285,6 +291,7 @@ async function splitBigDiff(diff) {
       6. Make it clear and descriptive.
       7. English only.
       8. Single-line format.
+      9. Do NOT try to format it like code / include \`\`\` in the message.
       
       Example: git commit -m "Add login feature"
 
@@ -312,6 +319,7 @@ function buildCommitMessagePrompt(diff) {
       6. Make it clear and descriptive.
       7. English only.
       8. Single-line format.
+      9. Do NOT try to format it like code / include \`\`\` in the message.
       
       Example: git commit -m "Add login feature"
     `;
@@ -371,7 +379,7 @@ function buildEstimatePrompt() {
     // Remove any extra spaces and return
     return prompt.replace(/ {2,}/g, ' ');
 }
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-1106-preview') {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-0125-preview') {
     let content = '';
     const stream = await openai.chat.completions.create({
         model,
@@ -436,7 +444,12 @@ async function resolveCommand(command, defaultsTo = '') {
     });
 }
 function copyLastMessageToClipboard() {
-    clipboardy.writeSync(getLatestMessage());
+    try {
+        clipboardy.writeSync(getLatestMessage());
+    }
+    catch (error) {
+        console.error('Could not copy to clipboard');
+    }
 }
 function getLatestMessage() {
     return messages[messages.length - 1].content;

@@ -386,6 +386,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = 'gp
         messages: overrideMessages || messages,
         stream: true
     });
+    writeStdout('Assistant: ');
     for await (const part of stream) {
         const text = part.choices[0]?.delta?.content || '';
         content = configureStdout(content, text);
@@ -475,7 +476,7 @@ const addMessage = (message, role = 'user') => {
     messages.push({ role, content: message });
 };
 const configureStdout = (content, text) => {
-    writeStdout(text);
+    writeStdout(text, colors.assistant);
     return content += text;
 };
 const colors = {

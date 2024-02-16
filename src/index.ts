@@ -490,6 +490,8 @@ async function streamAssistant(save= true,  overrideMessages = null, model = 'gp
         stream: true
     });
 
+    writeStdout('Assistant: ');
+
     for await (const part of stream) {
         const text = part.choices[0]?.delta?.content || '';
         content = configureStdout(content, text);

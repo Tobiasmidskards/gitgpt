@@ -196,10 +196,13 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 async function executeCliHelpFlow({ isFollowUp = false }) {
-    consoleHeader("CLI HELP");
+    if (!isFollowUp) {
+        consoleHeader("CLI HELP");
+    }
     const cliHistory = await getCliHistory();
     const userInput = await new Promise((resolve, reject) => {
-        rl.question("What is the problem? \n\n", (answer) => {
+        const question = isFollowUp ? "Tell me more about the problem: \n\n" : "What is the problem? \n\n";
+        rl.question(question, (answer) => {
             resolve(answer);
         });
     });
@@ -233,11 +236,11 @@ async function executeCliHelpFlow({ isFollowUp = false }) {
     emptyLine(2);
     // Ask the user if they need a follow-up
     const followUp = await new Promise((resolve, reject) => {
-        rl.question("Do you need a follow-up? (yes/no) \n\n", (answer) => {
+        rl.question("Do you need a follow-up? (y/n) \n", (answer) => {
             resolve(answer);
         });
     });
-    if (followUp === 'yes') {
+    if (followUp === 'y' || followUp === '' || followUp === 'yes') {
         await executeCliHelpFlow({ isFollowUp: true });
     }
     rl.close();

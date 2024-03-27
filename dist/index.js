@@ -195,7 +195,7 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
-async function executeCliHelpFlow() {
+async function executeCliHelpFlow({ isFollowUp = false }) {
     consoleHeader("CLI HELP");
     const cliHistory = await getCliHistory();
     const userInput = await new Promise((resolve, reject) => {
@@ -207,25 +207,40 @@ async function executeCliHelpFlow() {
       1. Single-line format.
       2. Do NOT try to format it like code / include \`\`\` in the message.
     `;
+    const userInputMessage = `
+        The user provided this information:
+        ${userInput}
+    `;
+    const context = `
+        Rules:
+        ${rules}
+        
+        Which Mac command would you use to solve this problem? 
+        ${userInputMessage}
+        
+        This is the history of the user's last 50 commands:
+        ${cliHistory}
+
+    `;
     const prompt = `
-    Rules:
-    ${rules}
-    
-    Which Mac command would you use to solve this problem? 
-    The user provided this information:
-    ${userInput}
-    
-    This is the history of the user's last 50 commands:
-    ${cliHistory}
-    
+    ${isFollowUp ? userInputMessage : context}
     Answer only with the command, not the explanation.
     `;
     addMessage(prompt);
     emptyLine();
     await streamAssistant();
     copyLastMessageToClipboard();
-    rl.close();
     emptyLine(2);
+    // Ask the user if they need a follow-up
+    const followUp = await new Promise((resolve, reject) => {
+        rl.question("Do you need a follow-up? (yes/no) \n\n", (answer) => {
+            resolve(answer);
+        });
+    });
+    if (followUp === 'yes') {
+        await executeCliHelpFlow({ isFollowUp: true });
+    }
+    rl.close();
 }
 async function executeGetCommitMessageFlow() {
     if (await getNumberOfFiles() === 0) {

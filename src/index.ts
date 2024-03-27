@@ -30,7 +30,7 @@ const messages: {
         { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
     ];
 
-const showHelp = () => { 
+const showHelp = () => {
     process.stdout.write(`
         Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--hint] [gg] [--]
 
@@ -47,10 +47,10 @@ const showHelp = () => {
         gg              Add all files, get commit message and push to origin
         --              Get CLI help
 
-    `); 
+    `);
 }
 
-let args : { [key: string]: string | boolean } = {};
+let args: { [key: string]: string | boolean } = {};
 
 const queue: { command: any, args: object | string }[] = [];
 
@@ -72,7 +72,7 @@ async function runQueue() {
     emptyLine();
 }
 
-function addToQueue(command:any, args = {}) {
+function addToQueue(command: any, args = {}) {
     queue.push({
         command,
         args
@@ -242,7 +242,7 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-async function executeCliHelpFlow() {
+async function executeCliHelpFlow({ isFollowUp = false }) {
     consoleHeader("CLI HELP");
 
     const cliHistory = await getCliHistory();
@@ -258,17 +258,25 @@ async function executeCliHelpFlow() {
       2. Do NOT try to format it like code / include \`\`\` in the message.
     `;
 
+    const userInputMessage = `
+        The user provided this information:
+        ${userInput}
+    `;
+
+    const context = `
+        Rules:
+        ${rules}
+        
+        Which Mac command would you use to solve this problem? 
+        ${userInputMessage}
+        
+        This is the history of the user's last 50 commands:
+        ${cliHistory}
+
+    `;
+
     const prompt = `
-    Rules:
-    ${rules}
-    
-    Which Mac command would you use to solve this problem? 
-    The user provided this information:
-    ${userInput}
-    
-    This is the history of the user's last 50 commands:
-    ${cliHistory}
-    
+    ${isFollowUp ? userInputMessage : context}
     Answer only with the command, not the explanation.
     `;
 
@@ -280,10 +288,20 @@ async function executeCliHelpFlow() {
 
     copyLastMessageToClipboard();
 
-    rl.close();
-
     emptyLine(2);
 
+    // Ask the user if they need a follow-up
+    const followUp = await new Promise((resolve, reject) => {
+        rl.question("Do you need a follow-up? (yes/no) \n\n", (answer) => {
+            resolve(answer);
+        });
+    });
+
+    if (followUp === 'yes') {
+        await executeCliHelpFlow({ isFollowUp: true });
+    }
+
+    rl.close();
 }
 
 async function executeGetCommitMessageFlow() {
@@ -317,8 +335,8 @@ async function prepareCommitMessagePrompt() {
 
     if (encoder.encode(diff).length > tokenLimit) {
         consoleInfo("Diff is too big, splitting into two chunks", 1, 1, true);
-         await splitBigDiff(diff);
-         return;
+        await splitBigDiff(diff);
+        return;
     }
 
     consoleInfo("Diff is: " + diff, 1, 1, true);
@@ -330,13 +348,13 @@ function splitStringInHalf(str) {
     // Calculate the index at which to split the string.
     // If the length is odd, the first half will be smaller by one character.
     const index = Math.ceil(str.length / 2);
-    
+
     // Use the calculated index to split the string into two halves.
     const firstHalf = str.substring(0, index);
     const secondHalf = str.substring(index);
-  
+
     return [firstHalf, secondHalf];
-  }
+}
 
 async function splitBigDiff(diff: string) {
     const diffChunks = splitStringInHalf(diff);
@@ -353,9 +371,9 @@ async function splitBigDiff(diff: string) {
             [
                 { role: 'user', content: prompt }
             ],
-        
-            ); 
-        
+
+        );
+
         allMessages.push(result);
     }
 
@@ -384,8 +402,8 @@ async function splitBigDiff(diff: string) {
         [
             { role: 'user', content: messagePayload },
         ],
-    
-        ); 
+
+    );
 
     addMessage(messagePayload);
     addMessage(result, 'assistant');
@@ -396,7 +414,7 @@ async function prepareEstimatePrompt() {
     addMessage(estimatePrompt);
 }
 
-function buildCommitMessagePrompt(diff:string) {
+function buildCommitMessagePrompt(diff: string) {
     const rules = `
       Commit Message Rules:
       1. Use the imperative mood ("Add" instead of "Adds" or "Added").
@@ -482,8 +500,9 @@ function buildEstimatePrompt() {
 }
 
 
-async function streamAssistant(save= true,  overrideMessages = null, model = 'gpt-4-0125-preview') {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-0125-preview') {
     let content = '';
+
     const stream = await openai.chat.completions.create({
         model,
         messages: overrideMessages || messages,
@@ -502,7 +521,7 @@ async function streamAssistant(save= true,  overrideMessages = null, model = 'gp
     if (save) {
         addMessage(content, 'assistant');
     }
-    
+
     return content;
 }
 
@@ -600,9 +619,9 @@ function consoleInfo(title: string, l1 = 1, l2 = 2, onlyVerbose = false) {
 
 const addMessage = (message: string, role: 'assistant' | 'system' | 'user'
     = 'user') => {
-        consoleInfo("Adding message: " + message, 1, 1, true);
-        messages.push({ role, content: message });
-    }
+    consoleInfo("Adding message: " + message, 1, 1, true);
+    messages.push({ role, content: message });
+}
 const configureStdout = (content: string, text: string) => {
     writeStdout(text, colors.assistant);
     return content += text;
@@ -614,7 +633,7 @@ const colors = {
     header: 33,
 } as const;
 
-const writeStdout = (content: string, color: number | null = null) => { 
+const writeStdout = (content: string, color: number | null = null) => {
     if (color) {
         process.stdout.write(`\x1b[${color}m`);
     }

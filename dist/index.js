@@ -397,7 +397,7 @@ function buildEstimatePrompt() {
     // Remove any extra spaces and return
     return prompt.replace(/ {2,}/g, ' ');
 }
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-0125-preview') {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-turbo') {
     let content = '';
     const stream = await openai.chat.completions.create({
         model,

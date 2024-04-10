@@ -503,7 +503,7 @@ function buildEstimatePrompt() {
 }
 
 
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-0125-preview') {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-turbo') {
     let content = '';
 
     const stream = await openai.chat.completions.create({

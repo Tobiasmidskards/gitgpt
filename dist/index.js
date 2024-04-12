@@ -104,7 +104,7 @@ async function main() {
 }
 async function getPatchNotes() {
     consoleHeader("PATCH NOTES");
-    const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last month'");
+    const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week'");
     const rules = `
       Patch Notes Rules:
       1. Use the git log output to create a list of patch notes.
@@ -145,7 +145,7 @@ async function writePatchNotes() {
     const patchNotes = messages[messages.length - 1].content;
     const date = new Date().toISOString().split('T')[0];
     const fileName = `CHANGELOG.md`;
-    const content = `## ${date}
+    const content = `## ${date} (auto-generated) (last week)
     
 ${patchNotes}
     

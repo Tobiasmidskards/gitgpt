@@ -140,7 +140,7 @@ async function main() {
 
 async function getPatchNotes() {
     consoleHeader("PATCH NOTES");
-    const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last month'");
+    const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week'");
     
     const rules = `
       Patch Notes Rules:
@@ -191,7 +191,7 @@ async function writePatchNotes() {
     const date = new Date().toISOString().split('T')[0];
     const fileName = `CHANGELOG.md`;
 
-    const content = `## ${date}
+    const content = `## ${date} (auto-generated) (last week)
     
 ${patchNotes}
     

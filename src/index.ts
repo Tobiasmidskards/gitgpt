@@ -172,6 +172,36 @@ async function getPatchNotes() {
     await streamAssistant(true, null, 'gpt-4-turbo', 2);
 
     copyLastMessageToClipboard();
+
+    emptyLine(2);
+
+    const followUp = await new Promise((resolve, reject) => {
+        rl.question("Do you want to write the patch notes? (y/N) \n", (answer) => {
+            resolve(answer);
+        });
+    });
+
+    if (followUp === 'y' || followUp === 'yes') {
+        await writePatchNotes();
+    }
+}
+
+async function writePatchNotes() {
+    const patchNotes = messages[messages.length - 1].content;
+    const date = new Date().toISOString().split('T')[0];
+    const fileName = `CHANGELOG.md`;
+
+    const content = `## ${date}
+    
+${patchNotes}
+    
+    `;
+
+    const command = `echo "${content}" >> ${fileName}`;
+
+    await resolveCommand(command);
+
+    consoleInfo("Patch notes written to file: " + fileName, 1, 1, true);
 }
 
 async function applyCommit() {

@@ -10,6 +10,7 @@ import readline from 'readline';
 import play from 'play-sound';
 import fs from 'fs';
 import { encodingForModel } from "js-tiktoken";
+import { get } from 'http';
 
 
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
@@ -43,6 +44,7 @@ const showHelp = () => {
         -P --push       Push to origin
         -A --add        Add all files
         -v --verbose    Show verbose output
+        --patch         Get patchnotes
         --hint          Provide hint for the assistant
         gg              Add all files, get commit message and push to origin
         --              Get CLI help
@@ -92,6 +94,10 @@ async function main() {
         useVoice = true;
     }
 
+    if (args['--patch']) {
+        addToQueue(getPatchNotes);
+    }
+
     if (args['--help'] || args['-h']) {
         showHelp();
         addToQueue(() => exit(0));
@@ -119,6 +125,8 @@ async function main() {
         addToQueue(executeEstimateFlow);
     }
 
+
+
     if (argLength === 0 || args['-A'] || args['--add']) {
         // Takes all added files and gets the commit message
         addToQueue(executeStatusFlow);
@@ -128,6 +136,41 @@ async function main() {
     await runQueue();
 
     exit(0);
+}
+
+async function getPatchNotes() {
+    consoleHeader("PATCH NOTES");
+    const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last month'");
+    
+    const rules = `
+      Patch Notes Rules:
+      1. Use the git log output to create a list of patch notes.
+      2. Group similar changes together.
+      3. Do NOT include the commit hash.
+      4. Do NOT include the commit message.
+      5. Do NOT include the commit date.
+      6. Do NOT include the commit author.
+      7. Leave out anything that is not relevant to the user.
+      8. The notes should be concise and descriptive.
+      9. English only.
+      10. Should be read by a non-technical person.     
+    `;
+
+    let prompt = `
+      The user wants to see the patch notes for the last month.
+      Based on the following git log output, create a list of patch notes:
+      ${patchNotes}
+      
+      ${rules}
+
+      Please list those notes on new lines.
+    `;
+
+    addMessage(prompt);
+
+    await streamAssistant(true, null, 'gpt-4-turbo', 2);
+
+    copyLastMessageToClipboard();
 }
 
 async function applyCommit() {
@@ -201,7 +244,8 @@ async function getArgs() {
         '-C',
         '--',
         'gg',
-        '--voice'
+        '--voice',
+        '--patch'
     ];
     const rawArgs = process.argv.slice(2);
 
@@ -503,7 +547,7 @@ function buildEstimatePrompt() {
 }
 
 
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-turbo') {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-turbo', emptyLines = 0) {
     let content = '';
 
     const stream = await openai.chat.completions.create({
@@ -513,6 +557,8 @@ async function streamAssistant(save = true, overrideMessages = null, model = 'gp
     });
 
     writeStdout('Assistant: ');
+
+    emptyLine(emptyLines);
 
     for await (const part of stream) {
         const text = part.choices[0]?.delta?.content || '';

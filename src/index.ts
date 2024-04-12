@@ -154,6 +154,7 @@ async function getPatchNotes() {
       8. The notes should be concise and descriptive.
       9. English only.
       10. Should be read by a non-technical person.     
+      11. Each line should start with a - (dash).
     `;
 
     let prompt = `

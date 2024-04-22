@@ -14,7 +14,7 @@ let verbose = false;
 let commitMessage = null;
 let useVoice = false;
 const tokenLimit = 128000 / 2;
-const encoder = await encodingForModel("gpt-4");
+const encoder = await encodingForModel("gpt-3.5-turbo");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages = [
     { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
@@ -129,7 +129,7 @@ async function getPatchNotes() {
       Please list those notes on new lines.
     `;
     addMessage(prompt);
-    await streamAssistant(true, null, 'gpt-4-turbo', 2);
+    await streamAssistant(true, null, 'gpt-3.5-turbo-0125', 2);
     copyLastMessageToClipboard();
     emptyLine(2);
     const followUp = await new Promise((resolve, reject) => {
@@ -454,7 +454,7 @@ function buildEstimatePrompt() {
     // Remove any extra spaces and return
     return prompt.replace(/ {2,}/g, ' ');
 }
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-4-turbo', emptyLines = 0) {
+async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-3.5-turbo-0125', emptyLines = 0) {
     let content = '';
     const stream = await openai.chat.completions.create({
         model,

@@ -20,7 +20,7 @@ let commitMessage: string | null = null;
 let useVoice = false;
 const tokenLimit = 128_000 / 2;
 
-const encoder = await encodingForModel("gpt-3.5-turbo");
+const encoder = await encodingForModel("gpt-3.5-turbo"); // test?
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const messages: {

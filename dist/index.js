@@ -6,16 +6,37 @@ import { exec } from 'child_process';
 import { exit } from 'process';
 import clipboardy from 'clipboardy';
 import readline from 'readline';
-import play from 'play-sound';
-import fs from 'fs';
 import { encodingForModel } from "js-tiktoken";
+import Groq from 'groq-sdk';
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage = null;
 let useVoice = false;
 const tokenLimit = 128000 / 2;
-const encoder = await encodingForModel("gpt-3.5-turbo");
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const encoder = await encodingForModel("gpt-4"); // test?
+const getClient = () => {
+    const client_type = process.env.CLIENT_TYPE || 'openai';
+    switch (client_type) {
+        case 'openai':
+            return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        case 'groq':
+            return new Groq({ apiKey: process.env.GROQ_API_KEY });
+        default:
+            throw new Error('Invalid client type');
+    }
+};
+const getDefaultModel = () => {
+    const client_type = process.env.CLIENT_TYPE || 'openai';
+    switch (client_type) {
+        case 'openai':
+            return 'gpt-4-turbo';
+        case 'groq':
+            return 'llama3-70b-8192';
+        default:
+            throw new Error('Invalid client type');
+    }
+};
+const client = getClient();
 const messages = [
     { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
 ];
@@ -129,7 +150,7 @@ async function getPatchNotes() {
       Please list those notes on new lines.
     `;
     addMessage(prompt);
-    await streamAssistant(true, null, 'gpt-3.5-turbo-0125', 2);
+    await streamAssistant(true, null);
     copyLastMessageToClipboard();
     emptyLine(2);
     const followUp = await new Promise((resolve, reject) => {
@@ -454,9 +475,11 @@ function buildEstimatePrompt() {
     // Remove any extra spaces and return
     return prompt.replace(/ {2,}/g, ' ');
 }
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-3.5-turbo-0125', emptyLines = 0) {
+async function streamAssistant(save = true, overrideMessages = null, model = null, emptyLines = 0) {
+    model = model || getDefaultModel();
     let content = '';
-    const stream = await openai.chat.completions.create({
+    // @ts-ignore
+    const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
         stream: true
@@ -477,20 +500,20 @@ async function speechAssistant(message, model = 'tts-1', voice = 'alloy') {
     if (!useVoice) {
         return;
     }
-    const speechFile = path.resolve("./speech.mp3");
-    const mp3 = await openai.audio.speech.create({
-        model: model,
-        input: message,
-        voice: voice
-    });
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-    await fs.promises.writeFile(speechFile, buffer);
-    const player = play();
-    player.play(speechFile, (err) => {
-        if (err) {
-            console.error(err);
-        }
-    });
+    // const speechFile = path.resolve("./speech.mp3");
+    // const mp3 = await getClient().audio.speech.create({
+    //     model: model,
+    //     input: message,
+    //     voice: voice as any
+    // });
+    // const buffer = Buffer.from(await mp3.arrayBuffer());
+    // await fs.promises.writeFile(speechFile, buffer);
+    // const player = play();
+    // player.play(speechFile, (err) => {
+    //     if (err) {
+    //         console.error(err);
+    //     }
+    // });
 }
 async function getStatus() {
     return await resolveCommand("git status --porcelain --branch --short");

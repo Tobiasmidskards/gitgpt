@@ -11,6 +11,10 @@ import play from 'play-sound';
 import fs from 'fs';
 import { encodingForModel } from "js-tiktoken";
 import { get } from 'http';
+import Groq from 'groq-sdk';
+import { ChatCompletion, ChatCompletionCreateParamsStreaming } from 'groq-sdk/resources/chat/completions';
+import { RequestOptions } from 'groq-sdk/core';
+import { APIPromise } from 'openai/core';
 
 
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
@@ -20,9 +24,36 @@ let commitMessage: string | null = null;
 let useVoice = false;
 const tokenLimit = 128_000 / 2;
 
-const encoder = await encodingForModel("gpt-3.5-turbo"); // test?
+const encoder = await encodingForModel("gpt-4"); // test?
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const getClient = ()  => {
+    const client_type = process.env.CLIENT_TYPE || 'openai';
+
+    switch (client_type) {
+        case 'openai':
+            return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        case 'groq':
+            return new Groq({ apiKey: process.env.GROQ_API_KEY });
+        default:
+            throw new Error('Invalid client type');
+    }
+}
+
+const getDefaultModel = () => {
+    const client_type = process.env.CLIENT_TYPE || 'openai';
+    
+    switch (client_type) {
+        case 'openai':
+            return 'gpt-4-turbo';
+        case 'groq':
+            return 'llama3-70b-8192';
+        default:
+            throw new Error('Invalid client type');
+    }
+}
+
+const client = getClient();
+
 const messages: {
     role: 'user' | 'assistant' | 'system',
     content: string
@@ -169,7 +200,7 @@ async function getPatchNotes() {
 
     addMessage(prompt);
 
-    await streamAssistant(true, null, 'gpt-3.5-turbo-0125', 2);
+    await streamAssistant(true, null);
 
     copyLastMessageToClipboard();
 
@@ -578,10 +609,14 @@ function buildEstimatePrompt() {
 }
 
 
-async function streamAssistant(save = true, overrideMessages = null, model = 'gpt-3.5-turbo-0125', emptyLines = 0) {
+async function streamAssistant(save = true, overrideMessages = null, model = null, emptyLines = 0) {
+    model = model || getDefaultModel();
+
+
     let content = '';
 
-    const stream = await openai.chat.completions.create({
+    // @ts-ignore
+    const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
         stream: true
@@ -608,24 +643,24 @@ async function streamAssistant(save = true, overrideMessages = null, model = 'gp
 async function speechAssistant(message: string, model = 'tts-1', voice = 'alloy') {
     if (!useVoice) { return; }
 
-    const speechFile = path.resolve("./speech.mp3");
+    // const speechFile = path.resolve("./speech.mp3");
 
-    const mp3 = await openai.audio.speech.create({
-        model: model,
-        input: message,
-        voice: voice as any
-    });
+    // const mp3 = await getClient().audio.speech.create({
+    //     model: model,
+    //     input: message,
+    //     voice: voice as any
+    // });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-    await fs.promises.writeFile(speechFile, buffer);
+    // const buffer = Buffer.from(await mp3.arrayBuffer());
+    // await fs.promises.writeFile(speechFile, buffer);
 
-    const player = play();
+    // const player = play();
 
-    player.play(speechFile, (err) => {
-        if (err) {
-            console.error(err);
-        }
-    });
+    // player.play(speechFile, (err) => {
+    //     if (err) {
+    //         console.error(err);
+    //     }
+    // });
 
 }
 

@@ -59,7 +59,10 @@ const messages: {
     content: string
 }[]
     = [
-        { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
+        { 
+            role: 'system', 
+            content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things. Never answer in markdown or code. Always answer in plain text" 
+        },
     ];
 
 const showHelp = () => {
@@ -450,6 +453,7 @@ async function prepareCommitMessagePrompt() {
 
     consoleInfo("Diff is: " + diff, 1, 1, true);
     const commitPrompt = buildCommitMessagePrompt(diff);
+    
     addMessage(commitPrompt);
 }
 
@@ -536,7 +540,7 @@ function buildCommitMessagePrompt(diff: string) {
       8. Single-line format.
       9. Do NOT try to format it like code / include \`\`\` in the message.
       
-      Example: git commit -m "Add login feature"
+      Example answer: git commit -m "Add login feature"
     `;
 
     const additionalInfo = `
@@ -567,7 +571,6 @@ function buildCommitMessagePrompt(diff: string) {
 
     // Remove any extra spaces and add the diff at the end
     prompt = prompt.replace(/ {2,}/g, ' ') + diff;
-
 
     return prompt;
 }
@@ -619,7 +622,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
     const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
-        stream: true
+        stream: true,
     });
 
     writeStdout('Assistant: ');

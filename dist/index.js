@@ -38,7 +38,10 @@ const getDefaultModel = () => {
 };
 const client = getClient();
 const messages = [
-    { role: 'system', content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things." },
+    {
+        role: 'system',
+        content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things. Never answer in markdown or code. Always answer in plain text"
+    },
 ];
 const showHelp = () => {
     process.stdout.write(`
@@ -417,7 +420,7 @@ function buildCommitMessagePrompt(diff) {
       8. Single-line format.
       9. Do NOT try to format it like code / include \`\`\` in the message.
       
-      Example: git commit -m "Add login feature"
+      Example answer: git commit -m "Add login feature"
     `;
     const additionalInfo = `
       In the diff, + indicates an added line, - indicates a removed line.
@@ -482,7 +485,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
     const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
-        stream: true
+        stream: true,
     });
     writeStdout('Assistant: ');
     emptyLine(emptyLines);

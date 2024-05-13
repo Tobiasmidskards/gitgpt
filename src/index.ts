@@ -44,7 +44,7 @@ const getDefaultModel = () => {
     
     switch (client_type) {
         case 'openai':
-            return 'gpt-4-turbo';
+            return 'gpt-4o';
         case 'groq':
             return 'llama3-70b-8192';
         default:

@@ -146,6 +146,7 @@ async function getCLNotes() {
       9. English only.
       11. Explain the change in a way that a non-technical person can understand.
       12. Each line should start with a - (dash).
+      13. A maximum of 5 notes. - Therefore, group similar changes together so only the most important ones are listed.
     `;
     let prompt = `
       The user wants to see what features have been added in the last week.

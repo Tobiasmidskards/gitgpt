@@ -79,6 +79,7 @@ const showHelp = () => {
         -A --add        Add all files
         -v --verbose    Show verbose output
         --patch         Get patchnotes
+        --cl            Get Customer Lead notes
         --hint          Provide hint for the assistant
         gg              Add all files, get commit message and push to origin
         --              Get CLI help
@@ -132,6 +133,10 @@ async function main() {
         addToQueue(getPatchNotes);
     }
 
+    if (args['--cl']) {
+        addToQueue(getCLNotes);
+    }
+
     if (args['--help'] || args['-h']) {
         showHelp();
         addToQueue(() => exit(0));
@@ -170,6 +175,45 @@ async function main() {
     await runQueue();
 
     exit(0);
+}
+
+async function getCLNotes() {
+    consoleHeader("CL NOTES");
+    const log = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week'");
+    
+    const rules = `
+      Feature Rules:
+      1. Use the git log output to create a list of notes.
+      2. Group similar changes together.
+      3. Do NOT include the commit hash.
+      4. Do NOT include the commit message.
+      5. Do NOT include the commit date.
+      6. Do NOT include the commit author.
+      7. Leave out anything that is not relevant to the CL.
+      8. The notes should be concise and descriptive.
+      9. English only.
+      11. Explain the change in a way that a non-technical person can understand.
+      12. Each line should start with a - (dash).
+    `;
+
+    let prompt = `
+      The user wants to see what features have been added in the last week.
+      Based on the following git log output, create a list of features:
+      
+      ${log}
+      
+      ${rules}
+
+      Please list those notes on new lines.
+    `;
+
+    addMessage(prompt);
+
+    await streamAssistant(true, null);
+
+    copyLastMessageToClipboard();
+
+    emptyLine(2);
 }
 
 async function getPatchNotes() {
@@ -310,7 +354,8 @@ async function getArgs() {
         '--',
         'gg',
         '--voice',
-        '--patch'
+        '--patch',
+        '--cl'
     ];
     const rawArgs = process.argv.slice(2);
 

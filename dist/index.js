@@ -560,7 +560,7 @@ async function getStatus() {
     return await resolveCommand("git status --porcelain --branch --short");
 }
 async function getDiff() {
-    return await resolveCommand("git --no-pager diff -U5 --cached --line-prefix '$ '", "No changes to commit");
+    return await resolveCommand("git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock'", "No changes to commit");
 }
 async function getCliHistory() {
     try {

@@ -46,7 +46,7 @@ const getDefaultModel = () => {
         case 'openai':
             return 'gpt-4o';
         case 'groq':
-            return 'llama3-70b-8192';
+            return 'llama-3.1-70b-versatile';
         default:
             throw new Error('Invalid client type');
     }
@@ -670,6 +670,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
         model,
         messages: overrideMessages || messages,
         stream: true,
+        temperature: 0.2,
     });
 
     writeStdout('Assistant: ');

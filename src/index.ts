@@ -579,14 +579,15 @@ function buildCommitMessagePrompt(diff: string) {
       1. Use the imperative mood ("Add" instead of "Adds" or "Added").
       2. Start with a capital letter.
       3. Do not end with a period.
-      4. Summarize the change, not the reason for it.
+      4. Focus on the "what" and "why", not the "how".
       5. Keep it concise, max 50 characters.
       6. Make it clear and descriptive.
       7. English only.
-      8. Single-line format.
-      9. Do NOT try to format it like code / include \`\`\` in the message.
+      8. Use "and" if the commit does multiple things.
+      9. Do NOT try to format it like code; Do not include \`\`\` in the message.
+      10. Avoid vague terms like "Fixes" or "Updates"; be specific.
       
-      Example answer: git commit -m "Add login feature"
+      Example answer: git commit -m "Add API endpoint for user login and Add login form to the homepage"
     `;
 
     const additionalInfo = `
@@ -603,7 +604,7 @@ function buildCommitMessagePrompt(diff: string) {
     }
 
     let prompt = `
-      The diff comes from this command: git --no-pager diff --cached -U5 --line-prefix '$ '
+      The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock'
       Each line starts with $ .
       ----
       ${rules}

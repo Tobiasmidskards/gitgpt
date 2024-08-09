@@ -29,7 +29,7 @@ const getDefaultModel = () => {
     const client_type = process.env.CLIENT_TYPE || 'openai';
     switch (client_type) {
         case 'openai':
-            return 'gpt-4o';
+            return 'gpt-4o-2024-08-06';
         case 'groq':
             return 'llama-3.1-70b-versatile';
         default:

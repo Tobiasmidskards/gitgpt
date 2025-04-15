@@ -22,7 +22,7 @@ dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage: string | null = null;
 let useVoice = false;
-const tokenLimit = 128_000 / 2;
+const tokenLimit = 512_000 / 2;
 
 const encoder = await encodingForModel("gpt-4"); // test?
 

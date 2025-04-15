@@ -12,7 +12,7 @@ dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
 let verbose = false;
 let commitMessage = null;
 let useVoice = false;
-const tokenLimit = 128000 / 2;
+const tokenLimit = 512000 / 2;
 const encoder = await encodingForModel("gpt-4"); // test?
 const getClient = () => {
     const client_type = process.env.CLIENT_TYPE || 'openai';

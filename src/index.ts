@@ -44,7 +44,7 @@ const getDefaultModel = () => {
     
     switch (client_type) {
         case 'openai':
-            return 'gpt-4.1-mini';
+            return 'gpt-4.1';
         case 'groq':
             return 'llama-3.1-70b-versatile';
         default:
@@ -67,7 +67,7 @@ const messages: {
 
 const showHelp = () => {
     process.stdout.write(`
-        Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--hint] [gg] [--]
+        Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--hint] [gg] [--] [pr]
 
         Defaults to all flows if no options are provided.
         
@@ -82,6 +82,7 @@ const showHelp = () => {
         --cl            Get Customer Lead notes
         --hint          Provide hint for the assistant
         gg              Add all files, get commit message and push to origin
+        pr              Create a new branch based on current changes
         --              Get CLI help
 
     `);
@@ -164,7 +165,10 @@ async function main() {
         addToQueue(executeEstimateFlow);
     }
 
-
+    if (args['pr']) {
+        consoleInfo("Creating PR branch", 1, 1, true);
+        addToQueue(executePrFlow);
+    }
 
     if (argLength === 0 || args['-A'] || args['--add']) {
         // Takes all added files and gets the commit message
@@ -356,7 +360,8 @@ async function getArgs() {
         'gg',
         '--voice',
         '--patch',
-        '--cl'
+        '--cl',
+        'pr'
     ];
     const rawArgs = process.argv.slice(2);
 
@@ -379,6 +384,8 @@ async function getArgs() {
             }
         } else if (key === 'gg') {
             // Git aliases
+            acc[key] = true;
+        } else if (key === 'pr') {
             acc[key] = true;
         }
 
@@ -480,6 +487,79 @@ async function executeEstimateFlow() {
     consoleHeader("Harvest");
     await prepareEstimatePrompt();
     await streamAssistant();
+}
+
+async function executePrFlow() {
+    consoleHeader("PR BRANCH");
+    
+    const diff = await getDiff();
+    if (!diff || diff.trim() === '') {
+        consoleInfo("No changes to create PR branch for", 1, 1, true);
+        return;
+    }
+
+    const branchName = await generateBranchName(diff);
+    
+    if (!branchName) {
+        consoleInfo("Failed to generate branch name");
+        return;
+    }
+
+    consoleInfo(`Creating branch: ${branchName}`, 2, 1);
+    
+    try {
+        await resolveCommand(`git checkout -b ${branchName}`);
+        consoleInfo(`Successfully created and switched to branch: ${branchName}`);
+    } catch (error) {
+        consoleInfo("Failed to create branch with error: " + error);
+    }
+}
+
+async function generateBranchName(diff: string): Promise<string | null> {
+    const rules = `
+        Branch Naming Rules:
+        1. Start with one of: feature/, chore/, bug/, hotfix/
+        2. Use kebab-case (lowercase with hyphens)
+        3. Be descriptive but concise (max 30 characters after prefix)
+        4. Use present tense verbs
+        5. No special characters except hyphens
+        6. English only
+        
+        Type Guidelines:
+        - feature/: New functionality or enhancements
+        - chore/: Maintenance, refactoring, or tooling changes
+        - bug/: Bug fixes
+        - hotfix/: Critical production fixes
+        
+        Examples:
+        - feature/user-login
+        - feature/payment-integration
+        - chore/update-dependencies
+        - bug/fix-validation-error
+        - hotfix/security-patch
+    `;
+
+    const prompt = `
+        Based on the following git diff, generate a branch name that follows the rules below.
+        
+        ${rules}
+        
+        Respond with ONLY the branch name, nothing else.
+        
+        Diff:
+        ${diff}
+    `;
+
+    try {
+        const branchName = await streamAssistant(false, [
+            { role: 'user', content: prompt }
+        ]);
+        
+        return branchName.trim();
+    } catch (error) {
+        console.error('Error generating branch name:', error);
+        return null;
+    }
 }
 
 async function executeStatusFlow() {

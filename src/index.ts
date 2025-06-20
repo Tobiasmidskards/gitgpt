@@ -578,7 +578,8 @@ async function prepareCommitMessagePrompt() {
     }
 
     consoleInfo("Diff is: " + diff, 1, 1, true);
-    const commitPrompt = buildCommitMessagePrompt(diff);
+    const previousCommitMessages = await getPreviousCommitMessages();
+    const commitPrompt = buildCommitMessagePrompt(diff, previousCommitMessages);
     
     addMessage(commitPrompt);
 }
@@ -604,7 +605,8 @@ async function splitBigDiff(diff: string) {
 
     for (let i = 0; i < diffChunks.length; i++) {
         const chunk = diffChunks[i];
-        const prompt = buildCommitMessagePrompt(chunk);
+        const previousCommitMessages = await getPreviousCommitMessages();
+        const prompt = buildCommitMessagePrompt(chunk, previousCommitMessages);
         const result = await streamAssistant(
             false,
             [
@@ -653,7 +655,11 @@ async function prepareEstimatePrompt() {
     addMessage(estimatePrompt);
 }
 
-function buildCommitMessagePrompt(diff: string) {
+async function getPreviousCommitMessages(numberOfMessages: number = 5) {
+    return await resolveCommand(`git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week' | tail -n ${numberOfMessages}`);
+}
+
+function buildCommitMessagePrompt(diff: string, previousCommitMessages: string = '') {
     const rules = `
       Commit Message Rules:
       1. Use the imperative mood ("Add" instead of "Adds" or "Added").
@@ -692,6 +698,9 @@ function buildCommitMessagePrompt(diff: string) {
       ${additionalInfo}
       ----
       ${hintInfo}
+      ----
+      Here are the previous commit messages:
+      ${previousCommitMessages}
       ----
       Diff is:
     `;

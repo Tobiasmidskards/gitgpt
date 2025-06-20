@@ -656,7 +656,7 @@ async function prepareEstimatePrompt() {
 }
 
 async function getPreviousCommitMessages(numberOfMessages: number = 5) {
-    return await resolveCommand(`git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week' | tail -n ${numberOfMessages}`);
+    return await resolveCommand(`git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %ad %s' --abbrev-commit | head -n ${numberOfMessages}`);
 }
 
 function buildCommitMessagePrompt(diff: string, previousCommitMessages: string = '') {

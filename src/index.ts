@@ -578,8 +578,7 @@ async function prepareCommitMessagePrompt() {
     }
 
     consoleInfo("Diff is: " + diff, 1, 1, true);
-    const previousCommitMessages = await getPreviousCommitMessages();
-    const commitPrompt = buildCommitMessagePrompt(diff, previousCommitMessages);
+    const commitPrompt = buildCommitMessagePrompt(diff);
     
     addMessage(commitPrompt);
 }
@@ -605,8 +604,7 @@ async function splitBigDiff(diff: string) {
 
     for (let i = 0; i < diffChunks.length; i++) {
         const chunk = diffChunks[i];
-        const previousCommitMessages = await getPreviousCommitMessages();
-        const prompt = buildCommitMessagePrompt(chunk, previousCommitMessages);
+        const prompt = buildCommitMessagePrompt(chunk);
         const result = await streamAssistant(
             false,
             [
@@ -656,7 +654,7 @@ async function prepareEstimatePrompt() {
 }
 
 async function getPreviousCommitMessages(numberOfMessages: number = 5) {
-    return await resolveCommand(`git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %ad %s' --abbrev-commit | head -n ${numberOfMessages}`);
+    return await resolveCommand(`git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week' | tail -n ${numberOfMessages}`);
 }
 
 function buildCommitMessagePrompt(diff: string, previousCommitMessages: string = '') {

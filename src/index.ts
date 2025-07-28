@@ -67,7 +67,7 @@ const messages: {
 
 const showHelp = () => {
     process.stdout.write(`
-        Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--hint] [gg] [--] [pr]
+        Usage: npm start -- [--help] [--commit] [--estimate] [--push] [--add] [--verbose] [--interactive] [--hint] [gg] [--] [pr]
 
         Defaults to all flows if no options are provided.
         
@@ -78,6 +78,7 @@ const showHelp = () => {
         -P --push       Push to origin
         -A --add        Add all files
         -v --verbose    Show verbose output
+        -i --interactive Allow interactive improvement of commit messages
         --patch         Get patchnotes
         --cl            Get Customer Lead notes
         --hint          Provide hint for the assistant
@@ -353,9 +354,9 @@ async function getArgs() {
         '--add',
         '-v',
         '--verbose',
+        '-i',
+        '--interactive',
         '--hint',
-        '-A',
-        '-C',
         '--',
         'gg',
         '--voice',
@@ -403,6 +404,14 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+
+async function askQuestion(question: string): Promise<string> {
+    return new Promise((resolve) => {
+        rl.question(question, (answer) => {
+            resolve(answer);
+        });
+    });
+}
 
 async function executeCliHelpFlow({ isFollowUp = false }) {
     if (!isFollowUp) {
@@ -481,6 +490,32 @@ async function executeGetCommitMessageFlow() {
     copyLastMessageToClipboard();
 
     commitMessage = getLatestMessage();
+    
+    // Validate the generated commit message
+    const validation = validateCommitMessage(commitMessage);
+    if (!validation.isValid) {
+        if (args['--verbose']) {
+            console.log('⚠️  Commit message could be improved:');
+            validation.suggestions.forEach(suggestion => {
+                console.log(`   • ${suggestion}`);
+            });
+        }
+        
+        // Ask if user wants to regenerate with specific improvements
+        if (args['--interactive'] || args['-i']) {
+            const shouldRegenerate = await askQuestion('Would you like to regenerate the commit message? (y/n): ');
+            if (shouldRegenerate.toLowerCase() === 'y' || shouldRegenerate.toLowerCase() === 'yes') {
+                const improvements = validation.suggestions.join('; ');
+                args['--hint'] = `Please improve the message by: ${improvements}`;
+                await prepareCommitMessagePrompt();
+                await streamAssistant();
+                copyLastMessageToClipboard();
+                commitMessage = getLatestMessage();
+            }
+        }
+    } else if (validation.isValid && args['--verbose']) {
+        console.log('✅ Commit message looks good!');
+    }
 }
 
 async function executeEstimateFlow() {
@@ -659,7 +694,147 @@ async function getPreviousCommitMessages(numberOfMessages: number = 5) {
     return await resolveCommand(`git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %ad %s' --abbrev-commit | head -n ${numberOfMessages}`);
 }
 
+function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: string[], changeTypes: string[] } {
+    const lines = diff.split('\n');
+    const fileTypes = new Set<string>();
+    const scopes = new Set<string>();
+    const changeTypes = new Set<string>();
+    
+    let currentFile = '';
+    let addedLines = 0;
+    let removedLines = 0;
+    
+    for (const line of lines) {
+        // Detect file changes
+        if (line.startsWith('$ diff --git')) {
+            const match = line.match(/b\/(.+)$/);
+            if (match) {
+                currentFile = match[1];
+                const ext = currentFile.split('.').pop()?.toLowerCase();
+                if (ext) fileTypes.add(ext);
+                
+                // Determine scope from file path
+                const pathParts = currentFile.split('/');
+                if (pathParts.length > 1) {
+                    scopes.add(pathParts[0]); // First directory as scope
+                }
+            }
+        }
+        
+        // Count additions and deletions
+        if (line.startsWith('$ +') && !line.startsWith('$ +++')) {
+            addedLines++;
+        } else if (line.startsWith('$ -') && !line.startsWith('$ ---')) {
+            removedLines++;
+        }
+        
+        // Detect specific change patterns
+        if (line.includes('function ') || line.includes('const ') || line.includes('class ')) {
+            if (line.startsWith('$ +')) {
+                changeTypes.add('feat');
+            } else if (line.startsWith('$ -')) {
+                changeTypes.add('refactor');
+            }
+        }
+        
+        // Detect test files
+        if (currentFile.includes('test') || currentFile.includes('spec')) {
+            changeTypes.add('test');
+        }
+        
+        // Detect documentation changes
+        if (currentFile.endsWith('.md') || currentFile.includes('README') || currentFile.includes('doc')) {
+            changeTypes.add('docs');
+        }
+        
+        // Detect configuration changes
+        if (currentFile.includes('config') || currentFile.endsWith('.json') || currentFile.endsWith('.yml') || currentFile.endsWith('.yaml')) {
+            changeTypes.add('chore');
+        }
+        
+        // Detect bug fixes (common patterns)
+        if (line.toLowerCase().includes('fix') || line.toLowerCase().includes('bug') || line.toLowerCase().includes('error')) {
+            changeTypes.add('fix');
+        }
+    }
+    
+    // Determine primary change type based on add/remove ratio
+    if (changeTypes.size === 0) {
+        if (addedLines > removedLines * 2) {
+            changeTypes.add('feat');
+        } else if (removedLines > addedLines * 2) {
+            changeTypes.add('refactor');
+        } else {
+            changeTypes.add('chore');
+        }
+    }
+    
+    return {
+        fileTypes: Array.from(fileTypes),
+        scopes: Array.from(scopes),
+        changeTypes: Array.from(changeTypes)
+    };
+}
+
+function generateConventionalCommitPrefix(analysis: { fileTypes: string[], scopes: string[], changeTypes: string[] }): string {
+    const primaryType = analysis.changeTypes[0] || 'chore';
+    const primaryScope = analysis.scopes[0];
+    
+    if (primaryScope && primaryScope !== 'src' && primaryScope !== '.') {
+        return `${primaryType}(${primaryScope})`;
+    }
+    return primaryType;
+}
+
+function validateCommitMessage(message: string): { isValid: boolean, suggestions: string[] } {
+    const suggestions: string[] = [];
+    let isValid = true;
+    
+    // Extract message from git command format
+    const match = message.match(/git commit -m "(.+)"/i);
+    const actualMessage = match ? match[1] : message;
+    
+    // Check length
+    if (actualMessage.length > 50) {
+        suggestions.push('Consider shortening the message to 50 characters or less');
+        isValid = false;
+    }
+    
+    // Check imperative mood
+    const firstWord = actualMessage.split(' ')[0].toLowerCase();
+    const nonImperativeWords = ['adds', 'added', 'fixes', 'fixed', 'updates', 'updated', 'changes', 'changed'];
+    if (nonImperativeWords.some(word => firstWord.includes(word))) {
+        suggestions.push('Use imperative mood ("Add" instead of "Adds" or "Added")');
+        isValid = false;
+    }
+    
+    // Check for vague terms
+    const vagueTerms = ['stuff', 'things', 'some', 'various', 'misc'];
+    if (vagueTerms.some(term => actualMessage.toLowerCase().includes(term))) {
+        suggestions.push('Be more specific instead of using vague terms');
+        isValid = false;
+    }
+    
+    // Check capitalization
+    if (actualMessage[0] !== actualMessage[0].toUpperCase()) {
+        suggestions.push('Start with a capital letter');
+        isValid = false;
+    }
+    
+    // Check for period at end
+    if (actualMessage.endsWith('.')) {
+        suggestions.push('Remove the ending period');
+        isValid = false;
+    }
+    
+    return { isValid, suggestions };
+}
+
 function buildCommitMessagePrompt(diff: string, previousCommitMessages: string = '') {
+    // Analyze the diff for better context
+    const analysis = analyzeChangedFiles(diff);
+    const conventionalPrefix = generateConventionalCommitPrefix(analysis);
+    
     const rules = `
       Commit Message Rules:
       1. Use the imperative mood ("Add" instead of "Adds" or "Added").
@@ -672,8 +847,17 @@ function buildCommitMessagePrompt(diff: string, previousCommitMessages: string =
       8. Use "and" if the commit does multiple things.
       9. Do NOT try to format it like code; Do not include \`\`\` in the message.
       10. Avoid vague terms like "Fixes" or "Updates"; be specific.
+      11. Consider using conventional commit format: ${conventionalPrefix}: message
       
-      Example answer: git commit -m "Add API endpoint for user login and Add login form to the homepage"
+      Example answer: git commit -m "feat(auth): Add API endpoint for user login and registration form"
+    `;
+    
+    const contextInfo = `
+      Change Analysis:
+      - File types affected: ${analysis.fileTypes.join(', ') || 'unknown'}
+      - Suggested scope: ${analysis.scopes.join(', ') || 'general'}
+      - Change type detected: ${analysis.changeTypes.join(', ') || 'general'}
+      - Suggested conventional prefix: ${conventionalPrefix}
     `;
 
     const additionalInfo = `
@@ -693,13 +877,15 @@ function buildCommitMessagePrompt(diff: string, previousCommitMessages: string =
       The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock'
       Each line starts with $ .
       ----
+      ${contextInfo}
+      ----
       ${rules}
       ----
       ${additionalInfo}
       ----
       ${hintInfo}
       ----
-      Here are the previous commit messages:
+      Here are the previous commit messages for consistency:
       ${previousCommitMessages}
       ----
       Diff is:

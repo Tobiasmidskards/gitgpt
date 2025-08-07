@@ -6,6 +6,8 @@ import { exec } from 'child_process';
 import { exit } from 'process';
 import clipboardy from 'clipboardy';
 import readline from 'readline';
+import fs from 'fs';
+import os from 'os';
 import { encodingForModel } from "js-tiktoken";
 import Groq from 'groq-sdk';
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
@@ -322,8 +324,64 @@ async function getArgs() {
 }
 const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
+    terminal: true,
+    historySize: 1000,
+    removeHistoryDuplicates: true,
 });
+// Persistent history for CLI help ("--") flow
+const CLI_HISTORY_FILE = path.join(os.homedir(), '.gitgpt_cli_history');
+let cliHistoryInitialized = false;
+// Helpers to access internal readline history with safe casts
+function getRlHistory() {
+    // @ts-ignore accessing internal property for UX
+    return rl.history || [];
+}
+function setRlHistory(history) {
+    // @ts-ignore accessing internal property for UX
+    rl.history = history;
+}
+async function initCliHistory() {
+    if (cliHistoryInitialized)
+        return;
+    try {
+        // Ensure file exists
+        await fs.promises.access(CLI_HISTORY_FILE).catch(async () => {
+            await fs.promises.writeFile(CLI_HISTORY_FILE, '');
+        });
+        const data = await fs.promises.readFile(CLI_HISTORY_FILE, 'utf8').catch(() => '');
+        const lines = data.split('\n').filter(line => line.trim().length > 0);
+        // readline expects most recent first
+        setRlHistory(lines.reverse());
+        // Reset index so Up arrow starts from newest
+        // @ts-ignore internal property
+        rl.historyIndex = -1;
+        cliHistoryInitialized = true;
+        consoleInfo(`Loaded ${lines.length} CLI help history items`, 1, 1, true);
+    }
+    catch {
+        // ignore
+    }
+}
+async function appendCliHistory(entry) {
+    const trimmed = (entry || '').trim();
+    if (!trimmed)
+        return;
+    try {
+        // Avoid consecutive duplicates
+        const hist = getRlHistory();
+        if (hist[0] && hist[0].trim() === trimmed) {
+            return;
+        }
+        await fs.promises.appendFile(CLI_HISTORY_FILE, trimmed + '\n');
+        setRlHistory([trimmed, ...hist].slice(0, 1000));
+    }
+    catch {
+        // ignore
+    }
+}
+// Initialize history early so it's available before any questions
+initCliHistory().catch(() => { });
 async function askQuestion(question) {
     return new Promise((resolve) => {
         rl.question(question, (answer) => {
@@ -335,11 +393,12 @@ async function executeCliHelpFlow({ isFollowUp = false }) {
     if (!isFollowUp) {
         consoleHeader("CLI HELP");
     }
+    await initCliHistory();
     const cliHistory = await getCliHistory();
     const userInput = await new Promise((resolve, reject) => {
         const question = isFollowUp ? "Tell me more about the problem: \n\n" : "What is the problem? \n\n";
         rl.question(question, (answer) => {
-            resolve(answer);
+            appendCliHistory(String(answer)).finally(() => resolve(answer));
         });
     });
     const rules = `

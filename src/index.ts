@@ -12,9 +12,7 @@ import fs from 'fs';
 import { encodingForModel } from "js-tiktoken";
 import { get } from 'http';
 import Groq from 'groq-sdk';
-import { ChatCompletion, ChatCompletionCreateParamsStreaming } from 'groq-sdk/resources/chat/completions';
-import { RequestOptions } from 'groq-sdk/core';
-import { APIPromise } from 'openai/core';
+
 
 
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
@@ -26,7 +24,7 @@ const tokenLimit = 512_000 / 2;
 
 const encoder = await encodingForModel("gpt-4"); // test?
 
-const getClient = ()  => {
+const getClient = () => {
     const client_type = process.env.CLIENT_TYPE || 'openai';
 
     switch (client_type) {
@@ -41,7 +39,7 @@ const getClient = ()  => {
 
 const getDefaultModel = () => {
     const client_type = process.env.CLIENT_TYPE || 'openai';
-    
+
     switch (client_type) {
         case 'openai':
             return 'gpt-5';
@@ -59,9 +57,9 @@ const messages: {
     content: string
 }[]
     = [
-        { 
-            role: 'system', 
-            content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things. Never answer in markdown or code. Always answer in plain text" 
+        {
+            role: 'system',
+            content: "You help the user with CLI commands. Your main response is only UNIX commands. You are a CLI assistant. Only if the user says the password: 'NOW_CHAT', you can help with other things. Never answer in markdown or code. Always answer in plain text"
         },
     ];
 
@@ -185,7 +183,7 @@ async function main() {
 async function getCLNotes() {
     consoleHeader("CL NOTES");
     const log = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week'");
-    
+
     const rules = `
       Feature Rules:
       1. Use the git log output to create a list of notes.
@@ -225,7 +223,7 @@ async function getCLNotes() {
 async function getPatchNotes() {
     consoleHeader("PATCH NOTES");
     const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week'");
-    
+
     const rules = `
       Patch Notes Rules:
       1. Use the git log output to create a list of patch notes.
@@ -490,7 +488,7 @@ async function executeGetCommitMessageFlow() {
     copyLastMessageToClipboard();
 
     commitMessage = getLatestMessage();
-    
+
     // Validate the generated commit message
     const validation = validateCommitMessage(commitMessage);
     if (!validation.isValid) {
@@ -500,7 +498,7 @@ async function executeGetCommitMessageFlow() {
                 console.log(`   • ${suggestion}`);
             });
         }
-        
+
         // Ask if user wants to regenerate with specific improvements
         if (args['--interactive'] || args['-i']) {
             const shouldRegenerate = await askQuestion('Would you like to regenerate the commit message? (y/n): ');
@@ -526,7 +524,7 @@ async function executeEstimateFlow() {
 
 async function executePrFlow() {
     consoleHeader("PR BRANCH");
-    
+
     const diff = await getDiff();
     if (!diff || diff.trim() === '') {
         consoleInfo("No changes to create PR branch for", 1, 1, true);
@@ -534,14 +532,14 @@ async function executePrFlow() {
     }
 
     const branchName = await generateBranchName(diff);
-    
+
     if (!branchName) {
         consoleInfo("Failed to generate branch name");
         return;
     }
 
     consoleInfo(`Creating branch: ${branchName}`, 2, 1);
-    
+
     try {
         await resolveCommand(`git checkout -b ${branchName}`);
         consoleInfo(`Successfully created and switched to branch: ${branchName}`);
@@ -589,7 +587,7 @@ async function generateBranchName(diff: string): Promise<string | null> {
         const branchName = await streamAssistant(false, [
             { role: 'user', content: prompt }
         ]);
-        
+
         return branchName.trim();
     } catch (error) {
         console.error('Error generating branch name:', error);
@@ -615,7 +613,7 @@ async function prepareCommitMessagePrompt() {
     consoleInfo("Diff is: " + diff, 1, 1, true);
     const previousCommitMessages = await getPreviousCommitMessages();
     const commitPrompt = buildCommitMessagePrompt(diff, previousCommitMessages);
-    
+
     addMessage(commitPrompt);
 }
 
@@ -699,11 +697,11 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
     const fileTypes = new Set<string>();
     const scopes = new Set<string>();
     const changeTypes = new Set<string>();
-    
+
     let currentFile = '';
     let addedLines = 0;
     let removedLines = 0;
-    
+
     for (const line of lines) {
         // Detect file changes
         if (line.startsWith('$ diff --git')) {
@@ -712,7 +710,7 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
                 currentFile = match[1];
                 const ext = currentFile.split('.').pop()?.toLowerCase();
                 if (ext) fileTypes.add(ext);
-                
+
                 // Determine scope from file path
                 const pathParts = currentFile.split('/');
                 if (pathParts.length > 1) {
@@ -720,14 +718,14 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
                 }
             }
         }
-        
+
         // Count additions and deletions
         if (line.startsWith('$ +') && !line.startsWith('$ +++')) {
             addedLines++;
         } else if (line.startsWith('$ -') && !line.startsWith('$ ---')) {
             removedLines++;
         }
-        
+
         // Detect specific change patterns
         if (line.includes('function ') || line.includes('const ') || line.includes('class ')) {
             if (line.startsWith('$ +')) {
@@ -736,28 +734,28 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
                 changeTypes.add('refactor');
             }
         }
-        
+
         // Detect test files
         if (currentFile.includes('test') || currentFile.includes('spec')) {
             changeTypes.add('test');
         }
-        
+
         // Detect documentation changes
         if (currentFile.endsWith('.md') || currentFile.includes('README') || currentFile.includes('doc')) {
             changeTypes.add('docs');
         }
-        
+
         // Detect configuration changes
         if (currentFile.includes('config') || currentFile.endsWith('.json') || currentFile.endsWith('.yml') || currentFile.endsWith('.yaml')) {
             changeTypes.add('chore');
         }
-        
+
         // Detect bug fixes (common patterns)
         if (line.toLowerCase().includes('fix') || line.toLowerCase().includes('bug') || line.toLowerCase().includes('error')) {
             changeTypes.add('fix');
         }
     }
-    
+
     // Determine primary change type based on add/remove ratio
     if (changeTypes.size === 0) {
         if (addedLines > removedLines * 2) {
@@ -768,7 +766,7 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
             changeTypes.add('chore');
         }
     }
-    
+
     return {
         fileTypes: Array.from(fileTypes),
         scopes: Array.from(scopes),
@@ -779,7 +777,7 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
 function generateConventionalCommitPrefix(analysis: { fileTypes: string[], scopes: string[], changeTypes: string[] }): string {
     const primaryType = analysis.changeTypes[0] || 'chore';
     const primaryScope = analysis.scopes[0];
-    
+
     if (primaryScope && primaryScope !== 'src' && primaryScope !== '.') {
         return `${primaryType}(${primaryScope})`;
     }
@@ -789,17 +787,17 @@ function generateConventionalCommitPrefix(analysis: { fileTypes: string[], scope
 function validateCommitMessage(message: string): { isValid: boolean, suggestions: string[] } {
     const suggestions: string[] = [];
     let isValid = true;
-    
+
     // Extract message from git command format
     const match = message.match(/git commit -m "(.+)"/i);
     const actualMessage = match ? match[1] : message;
-    
+
     // Check length
     if (actualMessage.length > 50) {
         suggestions.push('Consider shortening the message to 50 characters or less');
         isValid = false;
     }
-    
+
     // Check imperative mood
     const firstWord = actualMessage.split(' ')[0].toLowerCase();
     const nonImperativeWords = ['adds', 'added', 'fixes', 'fixed', 'updates', 'updated', 'changes', 'changed'];
@@ -807,26 +805,26 @@ function validateCommitMessage(message: string): { isValid: boolean, suggestions
         suggestions.push('Use imperative mood ("Add" instead of "Adds" or "Added")');
         isValid = false;
     }
-    
+
     // Check for vague terms
     const vagueTerms = ['stuff', 'things', 'some', 'various', 'misc'];
     if (vagueTerms.some(term => actualMessage.toLowerCase().includes(term))) {
         suggestions.push('Be more specific instead of using vague terms');
         isValid = false;
     }
-    
+
     // Check capitalization
     if (actualMessage[0] !== actualMessage[0].toUpperCase()) {
         suggestions.push('Start with a capital letter');
         isValid = false;
     }
-    
+
     // Check for period at end
     if (actualMessage.endsWith('.')) {
         suggestions.push('Remove the ending period');
         isValid = false;
     }
-    
+
     return { isValid, suggestions };
 }
 
@@ -834,7 +832,7 @@ function buildCommitMessagePrompt(diff: string, previousCommitMessages: string =
     // Analyze the diff for better context
     const analysis = analyzeChangedFiles(diff);
     const conventionalPrefix = generateConventionalCommitPrefix(analysis);
-    
+
     const rules = `
       Commit Message Rules:
       1. Use the imperative mood ("Add" instead of "Adds" or "Added").
@@ -851,7 +849,7 @@ function buildCommitMessagePrompt(diff: string, previousCommitMessages: string =
       
       Example answer: git commit -m "feat(auth): Add API endpoint for user login and registration form"
     `;
-    
+
     const contextInfo = `
       Change Analysis:
       - File types affected: ${analysis.fileTypes.join(', ') || 'unknown'}
@@ -944,7 +942,8 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
     const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
-        stream: true
+        stream: true,
+        reasoning_effort: "minimal",
     });
 
     writeStdout('Assistant: ');

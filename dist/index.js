@@ -771,7 +771,8 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
     const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
-        stream: true
+        stream: true,
+        reasoning_effort: "minimal",
     });
     writeStdout('Assistant: ');
     emptyLine(emptyLines);

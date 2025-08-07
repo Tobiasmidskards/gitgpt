@@ -29,7 +29,7 @@ const getDefaultModel = () => {
     const client_type = process.env.CLIENT_TYPE || 'openai';
     switch (client_type) {
         case 'openai':
-            return 'gpt-4.1';
+            return 'gpt-5';
         case 'groq':
             return 'llama-3.1-70b-versatile';
         default:
@@ -771,8 +771,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
     const stream = await client.chat.completions.create({
         model,
         messages: overrideMessages || messages,
-        stream: true,
-        temperature: 0.2,
+        stream: true
     });
     writeStdout('Assistant: ');
     emptyLine(emptyLines);

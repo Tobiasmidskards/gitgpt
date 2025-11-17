@@ -78,14 +78,14 @@ export function buildCommitMessagePrompt(diff, previousCommitMessages = '') {
       7. English only.
       8. Use "and" if the commit does multiple things.
       9. Do NOT try to format it like code; Do not include \`\`\` in the message.
-      10. Consider using conventional commit format: ${conventionalPrefix}: message
+      10. Use conventional commit format: ${conventionalPrefix}: message (DO NOT include scope in parentheses, only use the type prefix)
+      11. Never include scope information like (dist,src) or (auth) in the commit message
       
       Example answer: git commit -m "feat: Add API endpoint for user login and registration form"
     `;
     const contextInfo = `
       Change Analysis:
       - File types affected: ${analysis.fileTypes.join(', ') || 'unknown'}
-      - Suggested scope: ${analysis.scopes.join(', ') || 'general'}
       - Change type detected: ${analysis.changeTypes.join(', ') || 'general'}
       - Suggested conventional prefix: ${conventionalPrefix}
     `;

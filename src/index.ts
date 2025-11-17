@@ -836,11 +836,6 @@ function analyzeChangedFiles(diff: string): { fileTypes: string[], scopes: strin
 
 function generateConventionalCommitPrefix(analysis: { fileTypes: string[], scopes: string[], changeTypes: string[] }): string {
     const primaryType = analysis.changeTypes[0] || 'chore';
-    const primaryScope = analysis.scopes[0];
-
-    if (primaryScope && primaryScope !== 'src' && primaryScope !== '.') {
-        return `${primaryType}(${primaryScope})`;
-    }
     return primaryType;
 }
 
@@ -907,7 +902,7 @@ function buildCommitMessagePrompt(diff: string, previousCommitMessages: string =
       10. Avoid vague terms like "Fixes" or "Updates"; be specific.
       11. Consider using conventional commit format: ${conventionalPrefix}: message
       
-      Example answer: git commit -m "feat(auth): Add API endpoint for user login and registration form"
+      Example answer: git commit -m "feat: Add API endpoint for user login and registration form"
     `;
 
     const contextInfo = `

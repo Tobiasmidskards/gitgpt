@@ -80,7 +80,7 @@ export function buildCommitMessagePrompt(diff, previousCommitMessages = '') {
       9. Do NOT try to format it like code; Do not include \`\`\` in the message.
       10. Consider using conventional commit format: ${conventionalPrefix}: message
       
-      Example answer: git commit -m "feat(auth): Add API endpoint for user login and registration form"
+      Example answer: git commit -m "feat: Add API endpoint for user login and registration form"
     `;
     const contextInfo = `
       Change Analysis:
@@ -181,9 +181,5 @@ export function analyzeChangedFiles(diff) {
 }
 export function generateConventionalCommitPrefix(analysis) {
     const primaryType = analysis.changeTypes[0] || 'chore';
-    const primaryScope = analysis.scopes[0];
-    if (primaryScope && primaryScope !== 'src' && primaryScope !== '.') {
-        return `${primaryType}(${primaryScope})`;
-    }
     return primaryType;
 }

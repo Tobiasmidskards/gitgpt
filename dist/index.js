@@ -693,10 +693,6 @@ function analyzeChangedFiles(diff) {
 }
 function generateConventionalCommitPrefix(analysis) {
     const primaryType = analysis.changeTypes[0] || 'chore';
-    const primaryScope = analysis.scopes[0];
-    if (primaryScope && primaryScope !== 'src' && primaryScope !== '.') {
-        return `${primaryType}(${primaryScope})`;
-    }
     return primaryType;
 }
 function validateCommitMessage(message) {
@@ -753,7 +749,7 @@ function buildCommitMessagePrompt(diff, previousCommitMessages = '') {
       10. Avoid vague terms like "Fixes" or "Updates"; be specific.
       11. Consider using conventional commit format: ${conventionalPrefix}: message
       
-      Example answer: git commit -m "feat(auth): Add API endpoint for user login and registration form"
+      Example answer: git commit -m "feat: Add API endpoint for user login and registration form"
     `;
     const contextInfo = `
       Change Analysis:
@@ -773,7 +769,7 @@ function buildCommitMessagePrompt(diff, previousCommitMessages = '') {
         `;
     }
     let prompt = `
-      The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock' ':!tsbuildinfo'
+      The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock'
       Each line starts with $ .
       ----
       ${contextInfo}

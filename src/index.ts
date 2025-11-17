@@ -1005,7 +1005,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
         model,
         messages: overrideMessages || messages,
         stream: true,
-        reasoning_effort: "medium",
+        reasoning_effort: "low",
     });
 
     writeStdout('Assistant: ');

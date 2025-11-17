@@ -31,7 +31,7 @@ const getDefaultModel = () => {
     const client_type = process.env.CLIENT_TYPE || 'openai';
     switch (client_type) {
         case 'openai':
-            return 'gpt-5';
+            return 'gpt-5.1';
         case 'groq':
             return 'llama-3.1-70b-versatile';
         default:
@@ -773,7 +773,7 @@ function buildCommitMessagePrompt(diff, previousCommitMessages = '') {
         `;
     }
     let prompt = `
-      The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock'
+      The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock' ':!tsbuildinfo'
       Each line starts with $ .
       ----
       ${contextInfo}
@@ -831,7 +831,7 @@ async function streamAssistant(save = true, overrideMessages = null, model = nul
         model,
         messages: overrideMessages || messages,
         stream: true,
-        reasoning_effort: "minimal",
+        reasoning_effort: "none",
     });
     writeStdout('Assistant: ');
     emptyLine(emptyLines);

@@ -14,9 +14,16 @@ import { encodingForModel } from "js-tiktoken";
 import { get } from 'http';
 import Groq from 'groq-sdk';
 
-
-
+// Suppress dotenv informational messages
+const originalWrite = process.stdout.write.bind(process.stdout);
+process.stdout.write = function(chunk: any, encoding?: any, cb?: any): boolean {
+    if (typeof chunk === 'string' && chunk.includes('[dotenv@')) {
+        return true; // Suppress dotenv messages
+    }
+    return originalWrite(chunk, encoding, cb);
+};
 dotenv.config({ path: `${path.dirname(process.argv[1])}/../.env` });
+process.stdout.write = originalWrite; // Restore original write function
 
 let verbose = false;
 let commitMessage: string | null = null;

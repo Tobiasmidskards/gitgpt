@@ -1,7 +1,10 @@
-import { encoder, tokenLimit, getStateArgs, setCommitMessage, getCommitMessage } from './state.js';
+import clipboardy from 'clipboardy';
+import { encoder, tokenLimit, getStateArgs, setCommitMessage } from './state.js';
 import { consoleHeader, consoleInfo } from './logger.js';
 import { addMessage, streamAssistant, getLatestMessage } from './ai.js';
 import { getPreviousCommitMessages, getDiff } from './git.js';
+import { askQuestion } from './readlineUtils.js';
+import { isVerbose } from './state.js';
 
 export async function executeGetCommitMessageFlow() {
   const diff = await getDiff();
@@ -14,8 +17,37 @@ export async function executeGetCommitMessageFlow() {
   consoleHeader('COMMIT');
   await prepareCommitMessagePrompt();
   await streamAssistant();
-  const message = getLatestMessage();
+  copyLastMessageToClipboard();
+
+  let message = getLatestMessage();
   setCommitMessage(message);
+
+  const args = getStateArgs();
+  const validation = validateCommitMessage(message);
+  if (!validation.isValid) {
+    if (isVerbose()) {
+      console.log('⚠️  Commit message could be improved:');
+      validation.suggestions.forEach((suggestion) => {
+        console.log(`   • ${suggestion}`);
+      });
+    }
+
+    if (args['--interactive'] || args['-i']) {
+      const shouldRegenerate = await askQuestion('Would you like to regenerate the commit message? (y/n): ');
+      if (shouldRegenerate.toLowerCase() === 'y' || shouldRegenerate.toLowerCase() === 'yes') {
+        const improvements = validation.suggestions.join('; ');
+        // Update args in state so prepareCommitMessagePrompt picks up the hint.
+        args['--hint'] = `Please improve the message by: ${improvements}`;
+        await prepareCommitMessagePrompt();
+        await streamAssistant();
+        copyLastMessageToClipboard();
+        message = getLatestMessage();
+        setCommitMessage(message);
+      }
+    }
+  } else if (validation.isValid && isVerbose()) {
+    console.log('✅ Commit message looks good!');
+  }
 }
 
 // getLatestMessage imported directly to avoid dynamic require in ESM
@@ -198,6 +230,58 @@ export function analyzeChangedFiles(diff: string): { fileTypes: string[]; scopes
 export function generateConventionalCommitPrefix(analysis: { fileTypes: string[]; scopes: string[]; changeTypes: string[] }): string {
   const primaryType = analysis.changeTypes[0] || 'chore';
   return primaryType;
+}
+
+export function validateCommitMessage(message: string): { isValid: boolean; suggestions: string[] } {
+  const suggestions: string[] = [];
+  let isValid = true;
+
+  // Extract message from git command format
+  const match = message.match(/git commit -m "(.+)"/i);
+  const actualMessage = match ? match[1] : message;
+
+  // Check length
+  if (actualMessage.length > 50) {
+    suggestions.push('Consider shortening the message to 50 characters or less');
+    isValid = false;
+  }
+
+  // Check imperative mood
+  const firstWord = actualMessage.split(' ')[0]?.toLowerCase() || '';
+  const nonImperativeWords = ['adds', 'added', 'fixes', 'fixed', 'updates', 'updated', 'changes', 'changed'];
+  if (nonImperativeWords.some((word) => firstWord.includes(word))) {
+    suggestions.push('Use imperative mood ("Add" instead of "Adds" or "Added")');
+    isValid = false;
+  }
+
+  // Check for vague terms
+  const vagueTerms = ['stuff', 'things', 'some', 'various', 'misc'];
+  if (vagueTerms.some((term) => actualMessage.toLowerCase().includes(term))) {
+    suggestions.push('Be more specific instead of using vague terms');
+    isValid = false;
+  }
+
+  // Check capitalization
+  if (actualMessage[0] && actualMessage[0] !== actualMessage[0].toUpperCase()) {
+    suggestions.push('Start with a capital letter');
+    isValid = false;
+  }
+
+  // Check for period at end
+  if (actualMessage.endsWith('.')) {
+    suggestions.push('Remove the ending period');
+    isValid = false;
+  }
+
+  return { isValid, suggestions };
+}
+
+function copyLastMessageToClipboard() {
+  try {
+    clipboardy.writeSync(getLatestMessage());
+  } catch {
+    console.error('Could not copy to clipboard');
+  }
 }
 
 

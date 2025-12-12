@@ -1,6 +1,6 @@
 import clipboardy from 'clipboardy';
 import { consoleHeader, consoleInfo, emptyLine } from './logger.js';
-import { addMessage, streamAssistant } from './ai.js';
+import { addMessage, streamAssistant, getLatestMessage } from './ai.js';
 import { getCliHistory, getStatus } from './git.js';
 import { appendCliHistory, rl, initCliHistory } from './readlineUtils.js';
 
@@ -66,7 +66,6 @@ export async function executeCliHelpFlow({ isFollowUp = false }: { isFollowUp?: 
 
 export function copyLastMessageToClipboard() {
   try {
-    const { getLatestMessage } = require('./ai.js');
     clipboardy.writeSync(getLatestMessage());
   } catch (error) {
     console.error('Could not copy to clipboard');

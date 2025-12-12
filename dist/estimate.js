@@ -1,10 +1,11 @@
 import { consoleHeader } from './logger.js';
-import { addMessage } from './ai.js';
+import { addMessage, streamAssistant } from './ai.js';
 import { getStateArgs } from './state.js';
 export async function executeEstimateFlow() {
     consoleHeader('Harvest');
     const estimatePrompt = buildEstimatePrompt();
     addMessage(estimatePrompt);
+    await streamAssistant();
 }
 export function buildEstimatePrompt() {
     addMessage('Good - NOW_CHAT - from now on you can chat like a normal person.');

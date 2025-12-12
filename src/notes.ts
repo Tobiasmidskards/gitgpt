@@ -1,7 +1,8 @@
 import { consoleHeader, consoleInfo, emptyLine } from './logger.js';
-import { addMessage, streamAssistant } from './ai.js';
+import { addMessage, streamAssistant, getLatestMessage } from './ai.js';
 import { resolveCommand } from './git.js';
 import { rl } from './readlineUtils.js';
+import clipboardy from 'clipboardy';
 
 export async function getPatchNotes() {
   consoleHeader('PATCH NOTES');
@@ -88,7 +89,6 @@ export async function getCLNotes() {
 }
 
 export async function writePatchNotes() {
-  const { getLatestMessage } = require('./ai.js');
   const patchNotes = getLatestMessage();
   const date = new Date().toISOString().split('T')[0];
   const fileName = `CHANGELOG.md`;
@@ -100,9 +100,8 @@ export async function writePatchNotes() {
 
 function copyLastMessageToClipboard() {
   try {
-    const { getLatestMessage } = require('./ai.js');
     const text = getLatestMessage();
-    require('clipboardy').writeSync(text);
+    clipboardy.writeSync(text);
   } catch (error) {
     console.error('Could not copy to clipboard');
   }

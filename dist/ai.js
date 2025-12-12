@@ -27,7 +27,7 @@ export function getDefaultModel() {
     const clientType = process.env.CLIENT_TYPE || 'openai';
     switch (clientType) {
         case 'openai':
-            return 'gpt-5';
+            return 'gpt-5.2';
         case 'groq':
             return 'llama-3.1-70b-versatile';
         default:
@@ -43,7 +43,7 @@ export async function streamAssistant(save = true, overrideMessages = null, mode
         model,
         messages: overrideMessages || messages,
         stream: true,
-        reasoning_effort: 'minimal',
+        reasoning_effort: 'low',
     });
     writeStdout('Assistant: ');
     emptyLine(emptyLines);

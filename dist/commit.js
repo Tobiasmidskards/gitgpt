@@ -69,23 +69,21 @@ export async function splitBigDiff(diff) {
         allMessages.push(result);
     }
     const message = allMessages.join('');
-    const rules = `
-      Commit Message Rules:
-      1. Use the imperative mood ("Add" instead of "Adds" or "Added").
-      2. Start with a capital letter.
-      3. Do not end with a period.
-      4. Summarize the change, not the reason for it.
-      5. Keep it concise, max 50 characters.
-      6. Make it clear and descriptive.
-      7. English only.
-      8. Single-line format.
-      9. Do NOT try to format it like code / include \`\`\` in the message.
-      
-      Example: git commit -m "Add login feature"
-      
-      Combine the following messages into one commit message: 
-    `;
-    const messagePayload = rules + '\n\n' + message;
+    const combinePrompt = `Combine these partial commit messages into ONE final commit message:
+
+${message}
+
+## Rules
+1. Format: \`git commit -m "<type>: <Description>"\`
+2. Use conventional commit types: feat, fix, docs, style, refactor, test, chore
+3. Imperative mood: "Add" not "Added"
+4. Capitalize after the type prefix, no period at end
+5. Max 50 characters total
+6. Summarize the overall intent of all changes
+7. English only, no markdown
+
+Respond with ONLY the git commit command.`;
+    const messagePayload = combinePrompt;
     const result = await streamAssistant(false, [{ role: 'user', content: messagePayload }]);
     addMessage(messagePayload);
     addMessage(result, 'assistant');
@@ -97,57 +95,48 @@ export function splitStringInHalf(str) {
 export function buildCommitMessagePrompt(diff, previousCommitMessages = '') {
     const analysis = analyzeChangedFiles(diff);
     const conventionalPrefix = generateConventionalCommitPrefix(analysis);
-    const rules = `
-      Commit Message Rules:
-      1. Use the imperative mood ("Add" instead of "Adds" or "Added").
-      2. Start with a capital letter.
-      3. Do not end with a period.
-      4. Focus on the "what" and "why", not the "how".
-      5. Keep it concise, max 50 characters.
-      6. Make it clear and descriptive.
-      7. English only.
-      8. Use "and" if the commit does multiple things.
-      9. Do NOT try to format it like code; Do not include \`\`\` in the message.
-      10. Use conventional commit format: ${conventionalPrefix}: message (DO NOT include scope in parentheses, only use the type prefix)
-      11. Never include scope information like (dist,src) or (auth) in the commit message
-      
-      Example answer: git commit -m "feat: Add API endpoint for user login and registration form"
-    `;
-    const contextInfo = `
-      Change Analysis:
-      - File types affected: ${analysis.fileTypes.join(', ') || 'unknown'}
-      - Change type detected: ${analysis.changeTypes.join(', ') || 'general'}
-      - Suggested conventional prefix: ${conventionalPrefix}
-    `;
-    const additionalInfo = `
-      In the diff, + indicates an added line, - indicates a removed line.
-      Respond only in this format: git commit -m "Commit message". Lowercase commands only.
-    `;
-    let hintInfo = '';
     const args = getStateArgs();
-    if (args['--hint']) {
-        hintInfo = `
-      The user provided this hint for the commit message. Please incorporate it into your message: "${args['--hint']}"
-        `;
-    }
-    let prompt = `
-      The diff comes from this command: git --no-pager diff -U25 --cached --stat --line-prefix '$ ' -- ':!package-lock.json' ':!composer.lock'
-      Each line starts with $ .
-      ----
-      ${contextInfo}
-      ----
-      ${rules}
-      ----
-      ${additionalInfo}
-      ----
-      ${hintInfo}
-      ----
-      Here are the previous commit messages for consistency:
-      ${previousCommitMessages}
-      ----
-      Diff is:
-    `;
-    prompt = prompt.replace(/ {2,}/g, ' ') + diff;
+    const userHint = args['--hint'] ? `\nUser hint: "${args['--hint']}" — incorporate this into your message.` : '';
+    const prompt = `Generate a commit message for the following git diff.
+
+## Diff Format
+Lines starting with "$ +" are additions, "$ -" are deletions.
+
+## Commit Type
+Based on the changes, use type: ${conventionalPrefix}
+(File types: ${analysis.fileTypes.join(', ') || 'mixed'} | Detected: ${analysis.changeTypes.join(', ') || 'general'})
+
+## Rules
+1. Format: \`git commit -m "<type>: <Description>"\`
+2. Use conventional commit types: feat, fix, docs, style, refactor, test, chore
+3. Imperative mood: "Add" not "Added" or "Adds"
+4. Capitalize the first letter after the type prefix
+5. No period at the end
+6. Max 50 characters total (type + message)
+7. Describe WHAT changed and WHY it matters, not HOW
+8. Be specific — avoid vague words like "update", "fix things", "changes"
+9. If multiple changes, summarize the primary intent
+10. English only, no markdown formatting${userHint}
+
+## Good Examples
+- git commit -m "feat: Add user authentication flow"
+- git commit -m "fix: Prevent crash on empty input"
+- git commit -m "refactor: Extract validation logic"
+- git commit -m "docs: Update API usage examples"
+
+## Bad Examples (avoid these patterns)
+- "Update files" (too vague)
+- "Fix bug" (which bug?)
+- "feat(auth): Add login" (no scopes in parentheses)
+- "Added new feature" (not imperative)
+
+## Recent Commits (match this style)
+${previousCommitMessages || 'No recent commits available'}
+
+## Diff
+${diff}
+
+Respond with ONLY the git commit command, nothing else.`;
     return prompt;
 }
 export function analyzeChangedFiles(diff) {

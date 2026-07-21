@@ -3,6 +3,7 @@ import { addMessage, streamAssistant, getLatestMessage } from './ai.js';
 import { resolveCommand } from './git.js';
 import { rl } from './readlineUtils.js';
 import clipboardy from 'clipboardy';
+import fs from 'fs';
 export async function getPatchNotes() {
     consoleHeader('PATCH NOTES');
     const patchNotes = await resolveCommand("git log --oneline --no-merges --no-decorate --no-color --pretty=format:'%h %s' --abbrev-commit --since='last week'");
@@ -78,8 +79,7 @@ export async function writePatchNotes() {
     const date = new Date().toISOString().split('T')[0];
     const fileName = `CHANGELOG.md`;
     const content = `## ${date} (auto-generated) (last week)\n\n${patchNotes}\n\n`;
-    const command = `echo "${content}" >> ${fileName}`;
-    await resolveCommand(command);
+    await fs.promises.appendFile(fileName, content, 'utf8');
     consoleInfo('Patch notes written to file: ' + fileName, 1, 1, true);
 }
 function copyLastMessageToClipboard() {

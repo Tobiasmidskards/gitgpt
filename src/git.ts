@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { consoleInfo, writeStdout } from './logger.js';
 
 export async function resolveCommand(command: string, defaultsTo = ''): Promise<string> {
@@ -12,6 +12,19 @@ export async function resolveCommand(command: string, defaultsTo = ''): Promise<
         return reject(error || stderr);
       }
       return resolve(stdout || defaultsTo);
+    });
+  });
+}
+
+export async function resolveGitCommand(args: string[], defaultsTo = ''): Promise<string> {
+  consoleInfo('Running git with args: ' + args.join(' '), 1, 1, true);
+  return new Promise((resolve, reject) => {
+    execFile('git', args, (error, stdout, stderr) => {
+      if (error) {
+        return reject(error);
+      }
+
+      return resolve(stdout || stderr || defaultsTo);
     });
   });
 }
@@ -46,7 +59,7 @@ export async function getPreviousCommitMessages(numberOfMessages: number = 5) {
 export async function push() {
   try {
     consoleInfo('Pushing to origin', 2, 2);
-    writeStdout(await resolveCommand('git push'));
+    writeStdout(await resolveGitCommand(['push']));
   } catch (error) {
     console.error(error);
   }
@@ -63,5 +76,4 @@ export async function branchIsAhead() {
   const isAhead = await resolveCommand(command);
   return parseInt(isAhead as string) > 0;
 }
-
 

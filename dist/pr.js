@@ -1,6 +1,7 @@
 import { consoleHeader, consoleInfo } from './logger.js';
-import { getDiff, resolveCommand } from './git.js';
+import { getDiff, resolveGitCommand } from './git.js';
 import { streamAssistant } from './ai.js';
+import { parseBranchName } from './aiOutput.js';
 export async function executePrFlow() {
     consoleHeader('PR BRANCH');
     const diff = await getDiff();
@@ -15,7 +16,7 @@ export async function executePrFlow() {
     }
     consoleInfo(`Creating branch: ${branchName}`, 2, 1);
     try {
-        await resolveCommand(`git checkout -b ${branchName}`);
+        await resolveGitCommand(['checkout', '-b', branchName]);
         consoleInfo(`Successfully created and switched to branch: ${branchName}`);
     }
     catch (error) {
@@ -57,7 +58,7 @@ export async function generateBranchName(diff) {
     `;
     try {
         const branchName = await streamAssistant(false, [{ role: 'user', content: prompt }]);
-        return branchName.trim();
+        return parseBranchName(branchName);
     }
     catch (error) {
         console.error('Error generating branch name:', error);

@@ -5,6 +5,9 @@ import { addMessage, streamAssistant, getLatestMessage } from './ai.js';
 import { getPreviousCommitMessages, getDiff } from './git.js';
 import { askQuestion } from './readlineUtils.js';
 import { isVerbose } from './state.js';
+import { validateCommitMessage } from './aiOutput.js';
+
+export { validateCommitMessage } from './aiOutput.js';
 
 export async function executeGetCommitMessageFlow() {
   const diff = await getDiff();
@@ -218,50 +221,6 @@ export function generateConventionalCommitPrefix(analysis: { fileTypes: string[]
   return primaryType;
 }
 
-export function validateCommitMessage(message: string): { isValid: boolean; suggestions: string[] } {
-  const suggestions: string[] = [];
-  let isValid = true;
-
-  // Extract message from git command format
-  const match = message.match(/git commit -m "(.+)"/i);
-  const actualMessage = match ? match[1] : message;
-
-  // Check length
-  if (actualMessage.length > 50) {
-    suggestions.push('Consider shortening the message to 50 characters or less');
-    isValid = false;
-  }
-
-  // Check imperative mood
-  const firstWord = actualMessage.split(' ')[0]?.toLowerCase() || '';
-  const nonImperativeWords = ['adds', 'added', 'fixes', 'fixed', 'updates', 'updated', 'changes', 'changed'];
-  if (nonImperativeWords.some((word) => firstWord.includes(word))) {
-    suggestions.push('Use imperative mood ("Add" instead of "Adds" or "Added")');
-    isValid = false;
-  }
-
-  // Check for vague terms
-  const vagueTerms = ['stuff', 'things', 'some', 'various', 'misc'];
-  if (vagueTerms.some((term) => actualMessage.toLowerCase().includes(term))) {
-    suggestions.push('Be more specific instead of using vague terms');
-    isValid = false;
-  }
-
-  // Check capitalization
-  if (actualMessage[0] && actualMessage[0] !== actualMessage[0].toUpperCase()) {
-    suggestions.push('Start with a capital letter');
-    isValid = false;
-  }
-
-  // Check for period at end
-  if (actualMessage.endsWith('.')) {
-    suggestions.push('Remove the ending period');
-    isValid = false;
-  }
-
-  return { isValid, suggestions };
-}
-
 function copyLastMessageToClipboard() {
   try {
     clipboardy.writeSync(getLatestMessage());
@@ -269,5 +228,4 @@ function copyLastMessageToClipboard() {
     console.error('Could not copy to clipboard');
   }
 }
-
 

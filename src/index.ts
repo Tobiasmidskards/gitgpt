@@ -49,7 +49,8 @@ async function main() {
     const { executeEstimateFlow } = await import('./estimate.js');
     const { executePrFlow } = await import('./pr.js');
     const { getCLNotes, getPatchNotes } = await import('./notes.js');
-    const { branchIsAhead, getNumberOfFiles, push, resolveCommand } = await import('./git.js');
+    const { branchIsAhead, getNumberOfFiles, push, resolveCommand, resolveGitCommand } = await import('./git.js');
+    const { parseCommitCommand } = await import('./aiOutput.js');
 
     const args = await getArgs();
     setStateArgs(args);
@@ -111,14 +112,19 @@ async function main() {
             await executeGetCommitMessageFlow();
         }
 
-        const commitMessage = getCommitMessage();
-        if (!commitMessage) {
+        const commitCommand = getCommitMessage();
+        if (!commitCommand) {
             consoleInfo('No commit message available: <applyCommit>');
             return;
         }
 
-        consoleInfo('Applying commit with command: ' + commitMessage, 2, 1, true);
-        await resolveCommand(commitMessage);
+        const commitMessage = parseCommitCommand(commitCommand);
+        if (!commitMessage) {
+            throw new Error('The generated commit message did not match the required format');
+        }
+
+        consoleInfo('Applying commit: ' + commitMessage, 2, 1, true);
+        await resolveGitCommand(['commit', '-m', commitMessage]);
     }
 }
 

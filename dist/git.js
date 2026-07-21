@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { consoleInfo, writeStdout } from './logger.js';
 export async function resolveCommand(command, defaultsTo = '') {
     consoleInfo('Resolving command: ' + command, 1, 1, true);
@@ -11,6 +11,17 @@ export async function resolveCommand(command, defaultsTo = '') {
                 return reject(error || stderr);
             }
             return resolve(stdout || defaultsTo);
+        });
+    });
+}
+export async function resolveGitCommand(args, defaultsTo = '') {
+    consoleInfo('Running git with args: ' + args.join(' '), 1, 1, true);
+    return new Promise((resolve, reject) => {
+        execFile('git', args, (error, stdout, stderr) => {
+            if (error) {
+                return reject(error);
+            }
+            return resolve(stdout || stderr || defaultsTo);
         });
     });
 }
@@ -35,7 +46,7 @@ export async function getPreviousCommitMessages(numberOfMessages = 5) {
 export async function push() {
     try {
         consoleInfo('Pushing to origin', 2, 2);
-        writeStdout(await resolveCommand('git push'));
+        writeStdout(await resolveGitCommand(['push']));
     }
     catch (error) {
         console.error(error);

@@ -1,5 +1,6 @@
 import { exec, execFile } from 'child_process';
 import { consoleInfo, writeStdout } from './logger.js';
+import { askQuestion } from './readlineUtils.js';
 
 export async function resolveCommand(command: string, defaultsTo = ''): Promise<string> {
   consoleInfo('Resolving command: ' + command, 1, 1, true);
@@ -56,12 +57,54 @@ export async function getPreviousCommitMessages(numberOfMessages: number = 5) {
 
 // duplicate definitions removed below
 
+function isNoUpstreamError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('has no upstream branch') || message.includes('no upstream');
+}
+
+export async function getCurrentBranch(): Promise<string> {
+  const branch = (await resolveGitCommand(['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
+  if (!branch || branch === 'HEAD') {
+    throw new Error('Could not determine current branch name');
+  }
+  return branch;
+}
+
 export async function push() {
   try {
     consoleInfo('Pushing to origin', 2, 2);
     writeStdout(await resolveGitCommand(['push']));
   } catch (error) {
-    console.error(error);
+    if (!isNoUpstreamError(error)) {
+      console.error(error);
+      return;
+    }
+
+    let branch: string;
+    try {
+      branch = await getCurrentBranch();
+    } catch (branchError) {
+      console.error(branchError);
+      return;
+    }
+
+    const answer = (
+      await askQuestion(`No upstream for '${branch}'. Push and set upstream to origin/${branch}? [Y/n] `)
+    )
+      .trim()
+      .toLowerCase();
+
+    if (answer === 'n' || answer === 'no') {
+      consoleInfo('Skipping push', 1, 1);
+      return;
+    }
+
+    try {
+      consoleInfo(`Pushing and setting upstream to origin/${branch}`, 2, 2);
+      writeStdout(await resolveGitCommand(['push', '--set-upstream', 'origin', branch]));
+    } catch (pushError) {
+      console.error(pushError);
+    }
   }
 }
 
